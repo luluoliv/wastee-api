@@ -25,7 +25,6 @@ Antes de começar, certifique-se de ter os seguintes itens instalados:
 
 ```bash
 virtualenv venv
-source venv/bin/activate  # Para Linux/Mac
 venv\Scripts\activate     # Pa
   ```
 
