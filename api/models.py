@@ -2,45 +2,25 @@ from django.db import models
 
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 
-from rest_framework import generics
-from rest_framework.authtoken.models import Token
-from rest_framework.response import Response
-from rest_framework import status
-from django.contrib.auth import authenticate
-
-class LoginView(generics.GenericAPIView):
-    def post(self, request):
-        username = request.data.get('username')
-        password = request.data.get('password')
-        user = authenticate(username=username, password=password)
-
-        if user is not None:
-            token, created = Token.objects.get_or_create(user=user)
-            return Response({'token': token.key}, status=status.HTTP_200_OK)
-        else:
-            return Response({'error': 'Credenciais inválidas'}, status=status.HTTP_400_BAD_REQUEST)
-
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
-            raise ValueError('The Email field must be set')
+            raise ValueError('O email deve ser fornecido')
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
-        if password:
-            user.set_password(password)
+        user.set_password(password)  
         user.save(using=self._db)
         return user
 
     def create_superuser(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
-
         return self.create_user(email, password, **extra_fields)
+
 
 class User(AbstractBaseUser):
     email = models.EmailField(unique=True)
     name = models.CharField(max_length=255)
-    password = models.CharField(max_length=255, null=True) 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)

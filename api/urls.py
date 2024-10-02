@@ -3,7 +3,7 @@ from django.urls import path, include
 from .views import (
     UserViewSet,
     UserRegistrationView,
-    CustomTokenObtainPairView,
+    LoginView,
     ConfirmationCodeView,
     SellerViewSet,
     CategoryViewSet,
@@ -30,7 +30,7 @@ router.register(r'messages', MessageViewSet)
 
 urlpatterns = [
     path('register/', UserRegistrationView.as_view(), name='user-registration'), 
-    path('login/', CustomTokenObtainPairView.as_view(), name='token-obtain-pair'), 
+    path('login/', LoginView.as_view(), name='token-obtain-pair'), 
     path('confirm/', ConfirmationCodeView.as_view(), name='confirmation-code'), 
     path('', include(router.urls)), 
 ] 

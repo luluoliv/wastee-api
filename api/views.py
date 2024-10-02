@@ -1,15 +1,43 @@
 from rest_framework import viewsets
 from .models import User, ConfirmationCode, Seller, Category, Product, Comment, Order, OrderItem, Favorite, Chat, Message
-from .serializers import UserSerializer, ConfirmationCodeSerializer, SellerSerializer, CategorySerializer, ProductSerializer, CommentSerializer, OrderSerializer, OrderItemSerializer, FavoriteSerializer, ChatSerializer, MessageSerializer
+from .serializers import UserSerializer, SellerSerializer, LoginSerializer, CategorySerializer, ProductSerializer, CommentSerializer, OrderSerializer, OrderItemSerializer, FavoriteSerializer, ChatSerializer, MessageSerializer
 from rest_framework.permissions import AllowAny
 from rest_framework import generics
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from time import timezone
-from rest_framework_simplejwt.views import TokenObtainPairView
+
+from rest_framework import generics
+from rest_framework.authtoken.models import Token
+from rest_framework.response import Response
+from rest_framework import status
 
 from .utils import gerar_codigo_confirmacao, enviar_codigo_email
+
+class LoginView(generics.GenericAPIView):
+    serializer_class = LoginSerializer
+
+    def post(self, request):
+        print(f"Dados recebidos para login: {request.data}")  
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True) 
+
+        email = serializer.validated_data['email'].lower()
+        password = serializer.validated_data['password']
+
+        try:
+            user = User.objects.get(email=email)
+            if user.check_password(password):  
+                token, created = Token.objects.get_or_create(user=user)
+                return Response({'token': token.key}, status=status.HTTP_200_OK)
+            else:
+                return Response({'error': 'Credenciais inválidas'}, status=status.HTTP_400_BAD_REQUEST)
+        except User.DoesNotExist:
+            return Response({'error': 'Usuário não encontrado'}, status=status.HTTP_404_NOT_FOUND)
+
+
+
 
 class UserRegistrationView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -26,10 +54,6 @@ class UserRegistrationView(generics.CreateAPIView):
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-
-class CustomTokenObtainPairView(TokenObtainPairView):
-    def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()

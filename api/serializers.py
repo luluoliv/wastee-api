@@ -1,6 +1,19 @@
 from rest_framework import serializers
 from .models import User, ConfirmationCode, Seller, Category, Product, ProductImage, Comment, Order, OrderItem, Favorite, Chat, Message
 
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        email = attrs.get('email')
+        password = attrs.get('password')
+        
+        if not email or not password:
+            raise serializers.ValidationError('Email e senha são obrigatórios.')
+        
+        return attrs
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
