@@ -24,6 +24,11 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['id', 'email', 'name', 'password', 'is_active', 'created_at']
         read_only_fields = ['id', 'is_active', 'created_at']
 
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise ValidationError("Este email já está em uso.")
+        return value
+
     def validate_password(self, value):
         if len(value) < 8:
             raise ValidationError("A senha deve ter pelo menos 8 caracteres.")
@@ -61,6 +66,17 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = ['id', 'title', 'description', 'discounted_price', 'category', 'images']
 
+    def validate_discounted_price(self, value):
+        if value < 0:
+            raise ValidationError("O preço com desconto não pode ser negativo.")
+        return value
+
+    def validate_title(self, value):
+        if Product.objects.filter(title=value).exists():
+            raise ValidationError("Um produto com este título já existe.")
+        return value
+
+
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
@@ -95,10 +111,25 @@ class MessageSerializer(serializers.ModelSerializer):
         model = Message
         fields = ['id', 'chat', 'sender', 'content', 'timestamp']
 
+    def validate(self, data):
+        chat = data['chat']
+        user = self.context['request'].user
+        if user not in chat.participants.all():
+            raise ValidationError('Você não pode enviar mensagens neste chat.')
+        return data
+
+
 class ChatSerializer(serializers.ModelSerializer):
     messages = MessageSerializer(many=True, read_only=True)
 
     class Meta:
         model = Chat
         fields = ['id', 'participants', 'created_at', 'messages']
+
+    def validate(self, data):
+        participants = data['participants']
+        if len(participants) < 2:
+            raise ValidationError('Um chat deve ter pelo menos dois participantes.')
+        return data
+
 

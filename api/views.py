@@ -35,7 +35,7 @@ class LoginView(generics.GenericAPIView):
                 return Response({'error': 'Usuário inativo. Verifique seu email para confirmação.'}, status=status.HTTP_400_BAD_REQUEST)
 
             if user.check_password(password):
-                token, created = Token.objects.get_or_create(user=user)  # This line should work correctly
+                token, created = Token.objects.get_or_create(user=user)
                 return Response({'token': token.key}, status=status.HTTP_200_OK)
             else:
                 return Response({'error': 'Senha incorreta.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -103,10 +103,54 @@ class ProductViewSet(viewsets.ModelViewSet):
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated] 
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        category_id = self.request.query_params.get('category_id')
+        search = self.request.query_params.get('search')
+
+        if category_id:
+            queryset = queryset.filter(category_id=category_id)
+        if search:
+            queryset = queryset.filter(name__icontains=search)
+
+        return queryset
+
+    def create(self, request, *args, **kwargs):
+        """Criação de produto com validação específica para vendedores."""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        product = serializer.save()
+        return Response({'message': 'Produto criado com sucesso!', 'product': serializer.data}, status=status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        """Atualiza um produto e fornece mensagens específicas."""
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({'message': 'Produto atualizado com sucesso!', 'product': serializer.data}, status=status.HTTP_200_OK)
+
+
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticated] 
+
+    def create(self, request, *args, **kwargs):
+        """Adiciona um novo comentário a um produto."""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        comment = serializer.save()
+        return Response({'message': 'Comentário adicionado com sucesso!', 'comment': serializer.data}, status=status.HTTP_201_CREATED)
+
+    def list(self, request, *args, **kwargs):
+        """Lista os comentários de um produto específico."""
+        product_id = self.request.query_params.get('product_id')
+        queryset = self.queryset.filter(product_id=product_id)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
@@ -117,6 +161,20 @@ class OrderViewSet(viewsets.ModelViewSet):
         if self.request.user.is_authenticated:
             return Order.objects.filter(user=self.request.user)
         return Order.objects.none()
+
+    def create(self, request, *args, **kwargs):
+        """Criação de um novo pedido."""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        order = serializer.save()
+        return Response({'message': 'Pedido criado com sucesso!', 'order_id': order.id}, status=status.HTTP_201_CREATED)
+
+    def retrieve(self, request, *args, **kwargs):
+        """Obtém os detalhes de um pedido específico."""
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 class OrderItemViewSet(viewsets.ModelViewSet):
     queryset = OrderItem.objects.all()
@@ -133,6 +191,18 @@ class FavoriteViewSet(viewsets.ModelViewSet):
             return Favorite.objects.filter(user=self.request.user)
         return Favorite.objects.none()
 
+    def create(self, request, *args, **kwargs):
+        """Adiciona um produto aos favoritos."""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        favorite = serializer.save()
+        return Response({'message': 'Produto adicionado aos favoritos com sucesso!', 'favorite': serializer.data}, status=status.HTTP_201_CREATED)
+
+    def destroy(self, request, *args, **kwargs):
+        """Remove um produto dos favoritos."""
+        instance = self.get_object()
+        instance.delete()
+        return Response({'message': 'Produto removido dos favoritos com sucesso!'}, status=status.HTTP_204_NO_CONTENT)
 
 
 class ChatViewSet(viewsets.ModelViewSet):
@@ -146,6 +216,13 @@ class ChatViewSet(viewsets.ModelViewSet):
             return Chat.objects.none() 
         return Chat.objects.filter(buyer=user) | Chat.objects.filter(seller=user)
 
+    def create(self, request, *args, **kwargs):
+        """Inicia um novo chat entre comprador e vendedor."""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        chat = serializer.save()
+        return Response({'message': 'Chat iniciado com sucesso!', 'chat_id': chat.id}, status=status.HTTP_201_CREATED)
+
 class MessageViewSet(viewsets.ModelViewSet):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
@@ -156,5 +233,13 @@ class MessageViewSet(viewsets.ModelViewSet):
         if not user.is_authenticated: 
             return Message.objects.none()  
         return Message.objects.filter(chat__buyer=user) | Message.objects.filter(chat__seller=user)
+
+    def create(self, request, *args, **kwargs):
+        """Envia uma nova mensagem em um chat."""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        message = serializer.save()
+        return Response({'message': 'Mensagem enviada com sucesso!', 'message': serializer.data}, status=status.HTTP_201_CREATED)
+
 
 
