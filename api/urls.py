@@ -16,6 +16,7 @@ from .views import (
     MessageViewSet,
 )
 
+# Definindo o roteamento com DefaultRouter
 router = DefaultRouter()
 router.register(r'users', UserViewSet)
 router.register(r'sellers', SellerViewSet)
@@ -28,9 +29,10 @@ router.register(r'favorites', FavoriteViewSet)
 router.register(r'chats', ChatViewSet)
 router.register(r'messages', MessageViewSet)
 
+# Definição das URLs usando os viewsets e views específicos
 urlpatterns = [
-    path('register/', UserRegistrationView.as_view(), name='user-registration'), 
-    path('login/', LoginView.as_view(), name='token-obtain-pair'), 
-    path('confirm/', ConfirmationCodeView.as_view(), name='confirmation-code'), 
-    path('', include(router.urls)), 
-] 
+    path('register/', UserRegistrationView.as_view(), name='user-registration'),  # Cadastro de usuário
+    path('login/', LoginView.as_view(), name='token-obtain-pair'),  # Login do usuário
+    path('confirm/', ConfirmationCodeView.as_view(), name='confirmation-code'),  # Confirmação do código
+    path('', include(router.urls)),  # Inclui as rotas registradas pelo DefaultRouter
+]
