@@ -33,4 +33,4 @@ urlpatterns = [
     path('login/', CustomTokenObtainPairView.as_view(), name='token-obtain-pair'), 
     path('confirm/', ConfirmationCodeView.as_view(), name='confirmation-code'), 
     path('', include(router.urls)), 
-]
+] 
