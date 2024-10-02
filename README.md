@@ -35,13 +35,3 @@ pip install -r requirements.txt
 
   ```
 
-
-
-
-### Como Usar
-
-1. **Crie o arquivo**: Crie um novo arquivo chamado `README.md` na raiz do seu projeto e copie o código acima.
-2. **Personalize**: Não se esqueça de substituir os placeholders, como `seu-usuario`, `seu_email@example.com`, e qualquer outra informação que possa variar no seu projeto.
-3. **Commit e Push**: Salve as alterações, faça um commit e envie para o repositório.
-
-Esse formato organizado facilita para os outros entenderem como rodar a API e contribui para uma boa documentação do projeto. Se precisar de mais ajuda ou ajustes, é só avisar!
