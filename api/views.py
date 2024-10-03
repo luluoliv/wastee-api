@@ -9,39 +9,46 @@ from rest_framework.views import APIView
 from time import timezone
 
 from rest_framework import generics
-from rest_framework.authtoken.models import Token
+
 from rest_framework.response import Response
 from rest_framework import status
 
 from .utils import gerar_codigo_confirmacao, enviar_codigo_email
 
-from rest_framework.authtoken.models import Token
-
+from django.contrib.auth import authenticate
+from django.core.exceptions import ValidationError
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenBlacklistView
 
 class LoginView(generics.GenericAPIView):
     serializer_class = LoginSerializer
+    permission_classes = [AllowAny]
 
     def post(self, request):
         print(f"Dados recebidos para login: {request.data}")
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        email = serializer.validated_data['email'].lower()
-        password = serializer.validated_data['password']
-
+        
         try:
-            user = User.objects.get(email=email)
-            if not user.is_active:
-                return Response({'error': 'Usuário inativo. Verifique seu email para confirmação.'}, status=status.HTTP_400_BAD_REQUEST)
+            user = serializer.is_valid(raise_exception=True) 
+        except ValidationError as e:
+            return Response({"errors": e.detail}, status=status.HTTP_400_BAD_REQUEST)
 
-            if user.check_password(password):
-                token, created = Token.objects.get_or_create(user=user)
-                return Response({'token': token.key}, status=status.HTTP_200_OK)
-            else:
-                return Response({'error': 'Senha incorreta.'}, status=status.HTTP_400_BAD_REQUEST)
+        user = serializer.validated_data['user']
 
-        except User.DoesNotExist:
-            return Response({'error': 'Usuário não encontrado'}, status=status.HTTP_404_NOT_FOUND)
+        if not user.is_active:
+            return Response({'error': 'Usuário inativo. Verifique seu email para confirmação.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        refresh = RefreshToken.for_user(user)
+
+        return Response({
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+        }, status=status.HTTP_200_OK)
+
+
+
+class LogoutView(TokenBlacklistView):
+    permission_classes = [AllowAny]
 
 
 class UserRegistrationView(generics.CreateAPIView):

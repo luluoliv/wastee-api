@@ -2,6 +2,8 @@ from rest_framework import serializers
 from django.core.exceptions import ValidationError
 from django.contrib.auth.hashers import make_password
 from .models import User, ConfirmationCode, Seller, Category, Product, ProductImage, Comment, Order, OrderItem, Favorite, Chat, Message
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import authenticate
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -10,11 +12,20 @@ class LoginSerializer(serializers.Serializer):
     def validate(self, attrs):
         email = attrs.get('email')
         password = attrs.get('password')
-        
+
         if not email or not password:
             raise serializers.ValidationError('Email e senha são obrigatórios.')
-        
-        return attrs
+
+        user = authenticate(email=email, password=password)
+        if not user:
+            raise serializers.ValidationError('Credenciais inválidas.')
+
+        return {'user': user}
+
+
+class TokenSerializer(serializers.Serializer):
+    access = serializers.CharField()
+    refresh = serializers.CharField()
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
