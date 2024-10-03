@@ -54,17 +54,17 @@ class LogoutView(TokenBlacklistView):
 class UserRegistrationView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [AllowAny]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.save()
+        user = serializer.save(is_active=False)
 
         codigo = gerar_codigo_confirmacao(user)
         enviar_codigo_email(user.email, codigo)
 
         return Response({"message": "Usuário registrado com sucesso. Verifique seu email para confirmação."}, status=status.HTTP_201_CREATED)
+
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
