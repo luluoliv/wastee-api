@@ -46,7 +46,6 @@ class LoginView(generics.GenericAPIView):
         }, status=status.HTTP_200_OK)
 
 
-
 class LogoutView(TokenBlacklistView):
     permission_classes = [AllowAny]
 
@@ -65,7 +64,7 @@ class UserRegistrationView(generics.CreateAPIView):
 
         return Response({"message": "Usuário registrado com sucesso. Verifique seu email para confirmação."}, status=status.HTTP_201_CREATED)
 
-
+    
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -77,25 +76,38 @@ class ConfirmationCodeView(APIView):
     def post(self, request):
         code = request.data.get('confirmation_code')
         email = request.data.get('email')
-        password = request.data.get('password')
 
         try:
             confirmation = ConfirmationCode.objects.get(confirmation_code=code, user__email=email)
             if confirmation.is_used or confirmation.expiration_time < timezone.now():
                 return Response({'error': 'Código de confirmação inválido ou expirado'}, status=status.HTTP_400_BAD_REQUEST)
 
-            user = confirmation.user
-            user.is_active = True
-            user.password = make_password(password)
-            user.save()
-
+            # Marcar código como usado
             confirmation.is_used = True
             confirmation.save()
 
-            return Response({'message': 'Conta confirmada com sucesso!'}, status=status.HTTP_200_OK)
+            return Response({'message': 'Código de confirmação validado com sucesso!'}, status=status.HTTP_200_OK)
         except ConfirmationCode.DoesNotExist:
             return Response({'error': 'Código de confirmação não encontrado'}, status=status.HTTP_404_NOT_FOUND)
 
+class SetPasswordView(generics.UpdateAPIView):
+    queryset = User.objects.all()
+    permission_classes = [AllowAny]
+    serializer_class = UserSerializer
+
+    def update(self, request, *args, **kwargs):
+        email = request.data.get('email')
+        password = request.data.get('password')
+
+        try:
+            user = self.get_queryset().get(email=email)
+            user.password = make_password(password)
+            user.is_active = True  # Ativar o usuário após definir a senha
+            user.save()
+
+            return Response({'message': 'Senha definida com sucesso!'}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({'error': 'Usuário não encontrado'}, status=status.HTTP_404_NOT_FOUND)
 
 class SellerViewSet(viewsets.ModelViewSet):
     queryset = Seller.objects.all()
@@ -120,7 +132,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         if category_id:
             queryset = queryset.filter(category_id=category_id)
         if search:
-            queryset = queryset.filter(name__icontains=search)
+            queryset = queryset.filter(title__icontains=search)
 
         return queryset
 

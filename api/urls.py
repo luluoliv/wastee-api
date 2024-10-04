@@ -15,6 +15,7 @@ from .views import (
     FavoriteViewSet,
     ChatViewSet,
     MessageViewSet,
+    SetPasswordView
 )
 
 # Definindo o roteamento com DefaultRouter
@@ -35,6 +36,7 @@ urlpatterns = [
     path('register/', UserRegistrationView.as_view(), name='user-registration'),  # Cadastro de usuário
     path('login/', LoginView.as_view(), name='token-obtain-pair'),  # Login do usuário
     path('logout/', LogoutView.as_view(), name='token-obtain-pair'),  # Login do usuário
+    path('set-password/', SetPasswordView.as_view(), name='set-password'),
     path('confirm/', ConfirmationCodeView.as_view(), name='confirmation-code'),  # Confirmação do código
     path('', include(router.urls)),  # Inclui as rotas registradas pelo DefaultRouter
 ]
