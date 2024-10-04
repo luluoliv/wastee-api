@@ -15,7 +15,7 @@ from rest_framework import status
 
 from .utils import gerar_codigo_confirmacao, enviar_codigo_email
 
-from django.contrib.auth import authenticate
+from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenBlacklistView
@@ -76,15 +76,17 @@ class ConfirmationCodeView(APIView):
 
     def post(self, request):
         code = request.data.get('confirmation_code')
-        user_id = request.data.get('user_id')
+        email = request.data.get('email')
+        password = request.data.get('password')
 
         try:
-            confirmation = ConfirmationCode.objects.get(confirmation_code=code, user_id=user_id)
+            confirmation = ConfirmationCode.objects.get(confirmation_code=code, user__email=email)
             if confirmation.is_used or confirmation.expiration_time < timezone.now():
                 return Response({'error': 'Código de confirmação inválido ou expirado'}, status=status.HTTP_400_BAD_REQUEST)
 
             user = confirmation.user
             user.is_active = True
+            user.password = make_password(password)
             user.save()
 
             confirmation.is_used = True
