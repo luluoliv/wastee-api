@@ -10,21 +10,11 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
     def validate(self, attrs):
-        email = attrs.get('email')
-        password = attrs.get('password')
-
-        print(f"Tentando autenticar usuário com email: {email}")
-
-        if not email or not password:
-            raise serializers.ValidationError('Email e senha são obrigatórios.')
-
-        user = authenticate(email=email, password=password)
+        user = authenticate(email=attrs['email'], password=attrs['password'])
         if not user:
-            print("Autenticação falhou: Credenciais inválidas")
-            raise serializers.ValidationError('Credenciais inválidas.')
-
-        return {'user': user}
-
+            raise serializers.ValidationError('Credenciais inválidas')
+        attrs['user'] = user
+        return attrs
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
