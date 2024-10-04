@@ -23,7 +23,7 @@ class LoginSerializer(serializers.Serializer):
         return {'user': user}
 
 class UserSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True, required=False)  
 
     class Meta:
         model = User
@@ -36,13 +36,15 @@ class UserSerializer(serializers.ModelSerializer):
         return value
 
     def validate_password(self, value):
-        if len(value) < 8:
+        if value and len(value) < 8: 
             raise ValidationError("A senha deve ter pelo menos 8 caracteres.")
         return value
 
     def create(self, validated_data):
-        validated_data['password'] = make_password(validated_data['password'])
+        if 'password' in validated_data:
+            validated_data['password'] = make_password(validated_data['password'])
         return super(UserSerializer, self).create(validated_data)
+
 
 class TokenSerializer(serializers.Serializer):
     access = serializers.CharField()
