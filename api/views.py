@@ -60,9 +60,21 @@ class UserRegistrationView(generics.CreateAPIView):
         user = serializer.save(is_active=False)
 
         codigo = gerar_codigo_confirmacao(user)
-        enviar_codigo_email(user.email, codigo)
 
-        return Response({"message": "Usuário registrado com sucesso. Verifique seu email para confirmação."}, status=status.HTTP_201_CREATED)
+        try:
+            enviar_codigo_email(user.email, codigo)
+        except Exception as e:
+            if "Authentication Required" in str(e):
+                return Response({
+                    "error": "Erro de autenticação ao enviar e-mail. Verifique as credenciais do servidor de e-mail."
+                }, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "error": "Erro ao enviar e-mail. Tente novamente mais tarde."
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({
+            "message": "Usuário registrado com sucesso. Verifique seu email para confirmação."
+        }, status=status.HTTP_201_CREATED)
 
     
 class UserViewSet(viewsets.ModelViewSet):
@@ -82,7 +94,6 @@ class ConfirmationCodeView(APIView):
             if confirmation.is_used or confirmation.expiration_time < timezone.now():
                 return Response({'error': 'Código de confirmação inválido ou expirado'}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Marcar código como usado
             confirmation.is_used = True
             confirmation.save()
 
