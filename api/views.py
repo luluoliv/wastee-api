@@ -126,6 +126,7 @@ class ConfirmationCodeView(APIView):
 
         
 class SetPasswordView(generics.UpdateAPIView):
+    queryset = User.objects.all()
     permission_classes = [AllowAny] 
     serializer_class = UserSerializer
 
