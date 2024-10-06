@@ -1,27 +1,35 @@
-from rest_framework import viewsets
-from .models import User, ConfirmationCode, Seller, Category, Product, Comment, Order, OrderItem, Favorite, Chat, Message
-from .serializers import UserSerializer, SellerSerializer, LoginSerializer, CategorySerializer, ProductSerializer, CommentSerializer, OrderSerializer, OrderItemSerializer, FavoriteSerializer, ChatSerializer, MessageSerializer
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework import generics
-from rest_framework import status
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from django.utils import timezone
-
-from rest_framework import generics
-
-from rest_framework.response import Response
-from rest_framework import status
-
-from .utils import gerar_codigo_confirmacao, enviar_email_oauth
-
 import logging
-logger = logging.getLogger(__name__)
 
 from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+
+from rest_framework import generics, status, viewsets
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenBlacklistView
+
+from .models import User, ConfirmationCode, Seller, Category, Product, Comment, Order, OrderItem, Favorite, Chat, Message
+from .serializers import (
+    UserSerializer,
+    SellerSerializer,
+    LoginSerializer,
+    CategorySerializer,
+    ProductSerializer,
+    CommentSerializer,
+    OrderSerializer,
+    OrderItemSerializer,
+    FavoriteSerializer,
+    ChatSerializer,
+    MessageSerializer,
+)
+from .utils import gerar_codigo_confirmacao, enviar_email_oauth
+
+logger = logging.getLogger(__name__)
 
 class LoginView(generics.GenericAPIView):
     serializer_class = LoginSerializer
@@ -82,6 +90,13 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
+    def destroy(self, request, *args, **kwargs):
+        user = get_object_or_404(User, pk=kwargs['pk'])
+        try:
+            user.delete()
+            return Response({'message': 'Usuário deletado com sucesso!'}, status=status.HTTP_204_NO_CONTENT)
+        except IntegrityError:
+            return Response({'error': 'Não é possível deletar o usuário com registros relacionados existentes.'}, status=status.HTTP_400_BAD_REQUEST)
 
 class ConfirmationCodeView(APIView):
     permission_classes = [AllowAny]
