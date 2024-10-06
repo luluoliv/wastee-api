@@ -32,10 +32,10 @@ router.register(r'chats', ChatViewSet)
 router.register(r'messages', MessageViewSet)
 
 urlpatterns = [
-    path('register/', UserRegistrationView.as_view(), name='user-registration'),  # Cadastro de usuário
-    path('login/', LoginView.as_view(), name='token-obtain-pair'),  # Login do usuário
-    path('logout/', LogoutView.as_view(), name='token-obtain-pair'),  # Login do usuário
-    path('set-password/', SetPasswordView.as_view(), name='set-password'),
-    path('confirm/', ConfirmationCodeView.as_view(), name='confirmation-code'),  # Confirmação do código
-    path('', include(router.urls)),  # Inclui as rotas registradas pelo DefaultRouter
+    path('register/', UserRegistrationView.as_view(), name='user-registration'), 
+    path('login/', LoginView.as_view(), name='token-obtain-pair'), 
+    path('logout/', LogoutView.as_view(), name='token-obtain-pair'), 
+    path('set-password/<int:pk>/', SetPasswordView.as_view(), name='set-password'),
+    path('confirm/', ConfirmationCodeView.as_view(), name='confirmation-code'),  
+    path('', include(router.urls)),
 ]

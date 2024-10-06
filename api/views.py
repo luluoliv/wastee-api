@@ -114,14 +114,19 @@ class ConfirmationCodeView(APIView):
             confirmation.is_used = True
             confirmation.save()
 
-            return Response({'message': 'Código de confirmação validado com sucesso!'}, status=status.HTTP_200_OK)
+            user_id = confirmation.user.id
+
+            return Response({
+                'message': 'Código de confirmação validado com sucesso!',
+                'user_id': user_id 
+            }, status=status.HTTP_200_OK)
         except ConfirmationCode.DoesNotExist:
             logger.error(f"Código de confirmação não encontrado para o e-mail: {email}")
             return Response({'error': 'Código de confirmação não encontrado'}, status=status.HTTP_404_NOT_FOUND)
+
         
 class SetPasswordView(generics.UpdateAPIView):
-    queryset = User.objects.all()
-    permission_classes = [AllowAny]
+    permission_classes = [AllowAny] 
     serializer_class = UserSerializer
 
     def update(self, request, *args, **kwargs):
@@ -131,7 +136,7 @@ class SetPasswordView(generics.UpdateAPIView):
         try:
             user = self.get_queryset().get(email=email)
             user.password = make_password(password)
-            user.is_active = True  # Ativar o usuário após definir a senha
+            user.is_active = True
             user.save()
 
             return Response({'message': 'Senha definida com sucesso!'}, status=status.HTTP_200_OK)
