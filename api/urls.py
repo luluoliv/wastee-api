@@ -31,7 +31,6 @@ router.register(r'favorites', FavoriteViewSet)
 router.register(r'chats', ChatViewSet)
 router.register(r'messages', MessageViewSet)
 
-# Definição das URLs usando os viewsets e views específicos
 urlpatterns = [
     path('register/', UserRegistrationView.as_view(), name='user-registration'),  # Cadastro de usuário
     path('login/', LoginView.as_view(), name='token-obtain-pair'),  # Login do usuário
