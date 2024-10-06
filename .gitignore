@@ -1,3 +1,5 @@
 venv
 .staticfiles/
 .env
+token.json
+credentials.json

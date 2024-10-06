@@ -6,14 +6,17 @@ from rest_framework import generics
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from time import timezone
+from django.utils import timezone
 
 from rest_framework import generics
 
 from rest_framework.response import Response
 from rest_framework import status
 
-from .utils import gerar_codigo_confirmacao, enviar_codigo_email
+from .utils import gerar_codigo_confirmacao, enviar_email_oauth
+
+import logging
+logger = logging.getLogger(__name__)
 
 from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
@@ -62,12 +65,9 @@ class UserRegistrationView(generics.CreateAPIView):
         codigo = gerar_codigo_confirmacao(user)
 
         try:
-            enviar_codigo_email(user.email, codigo)
+            enviar_email_oauth(user.email, codigo)
         except Exception as e:
-            if "Authentication Required" in str(e):
-                return Response({
-                    "error": "Erro de autenticação ao enviar e-mail. Verifique as credenciais do servidor de e-mail."
-                }, status=status.HTTP_400_BAD_REQUEST)
+            logger.error(f"Erro ao enviar email: {str(e)}") 
             return Response({
                 "error": "Erro ao enviar e-mail. Tente novamente mais tarde."
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -75,6 +75,7 @@ class UserRegistrationView(generics.CreateAPIView):
         return Response({
             "message": "Usuário registrado com sucesso. Verifique seu email para confirmação."
         }, status=status.HTTP_201_CREATED)
+
 
     
 class UserViewSet(viewsets.ModelViewSet):
@@ -88,6 +89,7 @@ class ConfirmationCodeView(APIView):
     def post(self, request):
         code = request.data.get('confirmation_code')
         email = request.data.get('email')
+        logger.info(f"Recebido código: {code} para o e-mail: {email}")
 
         try:
             confirmation = ConfirmationCode.objects.get(confirmation_code=code, user__email=email)
@@ -99,8 +101,9 @@ class ConfirmationCodeView(APIView):
 
             return Response({'message': 'Código de confirmação validado com sucesso!'}, status=status.HTTP_200_OK)
         except ConfirmationCode.DoesNotExist:
+            logger.error(f"Código de confirmação não encontrado para o e-mail: {email}")
             return Response({'error': 'Código de confirmação não encontrado'}, status=status.HTTP_404_NOT_FOUND)
-
+        
 class SetPasswordView(generics.UpdateAPIView):
     queryset = User.objects.all()
     permission_classes = [AllowAny]

@@ -13,26 +13,9 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
+import os
 
 load_dotenv()
-
-import os
-import sys
-
-if __name__ == "__main__":
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "wastee.settings")
-    try:
-        from django.core.management import execute_from_command_line
-    except ImportError as exc:
-        raise ImportError(
-            "Couldn't import Django. Are you sure it's installed and "
-            "available on your PYTHONPATH environment variable? Did you "
-            "forget to activate a virtual environment?"
-        ) from exc
-    
-    port = os.environ.get('PORT', '8000') 
-    execute_from_command_line([sys.argv[0], 'runserver', f'0.0.0.0:{port}'])
-
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -110,14 +93,16 @@ TEMPLATES = [
 ]
 
 
-# settings.py
-
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+EMAIL_USE_OAUTH2 = True 
+EMAIL_CLIENT_ID = os.getenv('EMAIL_CLIENT_ID')
+EMAIL_CLIENT_SECRET = os.getenv('EMAIL_CLIENT_SECRET')
+EMAIL_REFRESH_TOKEN = os.getenv('EMAIL_REFRESH_TOKEN')
 
 
 WSGI_APPLICATION = 'wastee.wsgi.application'
