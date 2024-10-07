@@ -127,7 +127,7 @@ class ConfirmationCodeView(APIView):
         
 class SetPasswordView(generics.UpdateAPIView):
     queryset = User.objects.all()
-    permission_classes = [AllowAny] 
+    permission_classes = [AllowAny]
     serializer_class = UserSerializer
 
     def get_queryset(self):
@@ -143,9 +143,16 @@ class SetPasswordView(generics.UpdateAPIView):
             user.is_active = True
             user.save()
 
-            return Response({'message': 'Senha definida com sucesso!'}, status=status.HTTP_200_OK)
+            refresh = RefreshToken.for_user(user)
+
+            return Response({
+                'message': 'Senha definida com sucesso!',
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+            }, status=status.HTTP_200_OK)
         else:
             return Response({'error': 'A senha é necessária'}, status=status.HTTP_400_BAD_REQUEST)
+
 
 class SellerViewSet(viewsets.ModelViewSet):
     queryset = Seller.objects.all()
