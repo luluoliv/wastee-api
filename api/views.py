@@ -130,19 +130,22 @@ class SetPasswordView(generics.UpdateAPIView):
     permission_classes = [AllowAny] 
     serializer_class = UserSerializer
 
+    def get_queryset(self):
+        user_id = self.kwargs.get('pk')
+        return User.objects.filter(pk=user_id)
+
     def update(self, request, *args, **kwargs):
-        email = request.data.get('email')
+        user = self.get_object()
         password = request.data.get('password')
 
-        try:
-            user = self.get_queryset().get(email=email)
+        if password:
             user.password = make_password(password)
             user.is_active = True
             user.save()
 
             return Response({'message': 'Senha definida com sucesso!'}, status=status.HTTP_200_OK)
-        except User.DoesNotExist:
-            return Response({'error': 'Usuário não encontrado'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response({'error': 'A senha é necessária'}, status=status.HTTP_400_BAD_REQUEST)
 
 class SellerViewSet(viewsets.ModelViewSet):
     queryset = Seller.objects.all()
