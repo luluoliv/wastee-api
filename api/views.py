@@ -164,7 +164,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
     permission_classes = [IsAuthenticated] 
 
-class ProductViewSet(viewsets.ModelViewSet):
+class ProductListView(generics.ListAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated] 
@@ -181,6 +181,16 @@ class ProductViewSet(viewsets.ModelViewSet):
 
         return queryset
 
+class ProductDetailView(generics.RetrieveAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    permission_classes = [IsAuthenticated] 
+
+class ProductViewSet(viewsets.ModelViewSet):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    permission_classes = [IsAuthenticated] 
+
     def create(self, request, *args, **kwargs):
         """Criação de produto com validação específica para vendedores."""
         serializer = self.get_serializer(data=request.data)
@@ -196,6 +206,13 @@ class ProductViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({'message': 'Produto atualizado com sucesso!', 'product': serializer.data}, status=status.HTTP_200_OK)
+
+    def destroy(self, request, *args, **kwargs):
+        """Remove um produto."""
+        instance = self.get_object()
+        instance.delete()
+        return Response({'message': 'Produto removido com sucesso!'}, status=status.HTTP_204_NO_CONTENT)
+
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -253,22 +270,22 @@ class FavoriteViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated] 
 
     def get_queryset(self):
-        if self.request.user.is_authenticated:
-            return Favorite.objects.filter(user=self.request.user)
-        return Favorite.objects.none()
+        return Favorite.objects.filter(user=self.request.user)
 
     def create(self, request, *args, **kwargs):
-        """Adiciona um produto aos favoritos."""
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        favorite = serializer.save()
-        return Response({'message': 'Produto adicionado aos favoritos com sucesso!', 'favorite': serializer.data}, status=status.HTTP_201_CREATED)
+        if serializer.is_valid():
+            favorite = serializer.save()
+            logger.info(f"Produto {favorite.product.title} adicionado aos favoritos pelo usuário {request.user.email}.")
+            return Response({'message': 'Produto adicionado aos favoritos com sucesso!', 'favorite': serializer.data}, status=status.HTTP_201_CREATED)
+        return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
     def destroy(self, request, *args, **kwargs):
-        """Remove um produto dos favoritos."""
         instance = self.get_object()
         instance.delete()
+        logger.info(f"Produto {instance.product.title} removido dos favoritos pelo usuário {request.user.email}.")
         return Response({'message': 'Produto removido dos favoritos com sucesso!'}, status=status.HTTP_204_NO_CONTENT)
+
 
 
 class ChatViewSet(viewsets.ModelViewSet):

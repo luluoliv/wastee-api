@@ -8,7 +8,8 @@ from .views import (
     ConfirmationCodeView,
     SellerViewSet,
     CategoryViewSet,
-    ProductViewSet,
+    ProductListView,
+    ProductDetailView,
     CommentViewSet,
     OrderViewSet,
     OrderItemViewSet,
@@ -23,7 +24,6 @@ router = DefaultRouter()
 router.register(r'users', UserViewSet)
 router.register(r'sellers', SellerViewSet)
 router.register(r'categories', CategoryViewSet)
-router.register(r'products', ProductViewSet)
 router.register(r'comments', CommentViewSet)
 router.register(r'orders', OrderViewSet)
 router.register(r'order-items', OrderItemViewSet)
@@ -32,6 +32,8 @@ router.register(r'chats', ChatViewSet)
 router.register(r'messages', MessageViewSet)
 
 urlpatterns = [
+    path('products/', ProductListView.as_view(), name='product-list'),
+    path('products/<int:pk>/', ProductDetailView.as_view(), name='product-detail'),
     path('register/', UserRegistrationView.as_view(), name='user-registration'), 
     path('login/', LoginView.as_view(), name='token-obtain-pair'), 
     path('logout/', LogoutView.as_view(), name='token-obtain-pair'), 

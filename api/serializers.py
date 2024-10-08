@@ -45,11 +45,9 @@ class UserSerializer(serializers.ModelSerializer):
             validated_data['password'] = make_password(validated_data['password'])
         return super(UserSerializer, self).create(validated_data)
 
-
 class TokenSerializer(serializers.Serializer):
     access = serializers.CharField()
     refresh = serializers.CharField()
-
 
 class ConfirmationCodeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -71,18 +69,41 @@ class ProductImageSerializer(serializers.ModelSerializer):
         model = ProductImage
         fields = ['id', 'image', 'product']
 
-class ProductSerializer(serializers.ModelSerializer):
-    images = ProductImageSerializer(many=True, read_only=True)
-    seller_id = serializers.IntegerField(source='seller.id', read_only=True)  
-    seller_name = serializers.CharField(source='seller.user.name', read_only=True) 
-    category_name = serializers.CharField(source='category.name', read_only=True) 
+class ProductListSerializer(serializers.ModelSerializer):
+    seller_name = serializers.CharField(source='seller.user.name', read_only=True)
+    image = serializers.SerializerMethodField()  # Renomeado para refletir que é uma única imagem
+
+    class Meta:
+        model = Product
+        fields = (
+            'id', 'title', 'original_price', 'discounted_price', 'favorited', 'rate', 'seller_name', 'image'
+        )
+
+    def get_image(self, obj):
+        # Obtém a primeira imagem ou retorna None se não houver imagens
+        first_image = obj.images.first()  # Obtém a primeira imagem
+        if first_image:
+            return ProductImageSerializer(first_image).data  # Serializa a primeira imagem
+        return None  # Retorna None se não houver imagens
+
+class ProductDetailSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()  # Alterado para retornar uma única imagem
+    seller_id = serializers.IntegerField(source='seller.id', read_only=True)
+    seller_name = serializers.CharField(source='seller.user.name', read_only=True)
+    category_name = serializers.CharField(source='category.name', read_only=True)
 
     class Meta:
         model = Product
         fields = (
             'id', 'title', 'original_price', 'discounted_price', 'description', 'favorited', 'rate', 
-            'seller_id', 'seller_name', 'category_name', 'state', 'city', 'neighborhood', 'images'
+            'seller_id', 'seller_name', 'category_name', 'state', 'city', 'neighborhood', 'image'
         )
+
+    def get_image(self, obj):
+        first_image = obj.images.first() 
+        if first_image:
+            return ProductImageSerializer(first_image).data  
+        return None 
 
     def validate_discounted_price(self, value):
         price = self.instance.original_price if self.instance else self.initial_data.get('original_price')
@@ -92,8 +113,6 @@ class ProductSerializer(serializers.ModelSerializer):
             raise ValidationError("O preço com desconto não pode ser negativo.")
         return value
 
-
-
     def validate_title(self, value):
         if self.instance:
             if Product.objects.filter(title=value).exclude(id=self.instance.id).exists():
@@ -102,8 +121,6 @@ class ProductSerializer(serializers.ModelSerializer):
             if Product.objects.filter(title=value).exists():
                 raise ValidationError("Um produto com este título já existe.")
         return value
-
-
 
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -122,7 +139,6 @@ class OrderSerializer(serializers.ModelSerializer):
         model = Order
         fields = ['id', 'user', 'status', 'total_price', 'created_at', 'items']
 
-
 class FavoriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Favorite
@@ -132,7 +148,6 @@ class FavoriteSerializer(serializers.ModelSerializer):
         if Favorite.objects.filter(user=data['user'], product=data['product']).exists():
             raise serializers.ValidationError('Este produto já está nos favoritos.')
         return data
-
 
 class MessageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -146,7 +161,6 @@ class MessageSerializer(serializers.ModelSerializer):
             raise ValidationError('Você não pode enviar mensagens neste chat.')
         return data
 
-
 class ChatSerializer(serializers.ModelSerializer):
     messages = MessageSerializer(many=True, read_only=True)
 
@@ -159,5 +173,3 @@ class ChatSerializer(serializers.ModelSerializer):
         if len(participants) < 2:
             raise ValidationError('Um chat deve ter pelo menos dois participantes.')
         return data
-
-
