@@ -30,10 +30,10 @@ router.register(r'order-items', OrderItemViewSet)
 router.register(r'favorites', FavoriteViewSet)
 router.register(r'chats', ChatViewSet)
 router.register(r'messages', MessageViewSet)
+router.register(r'products', ProductViewSet)
 
 
 urlpatterns = [
-    path('products/', ProductViewSet.as_view(), name='product-list'),
     path('products/<int:pk>/', ProductDetailView.as_view(), name='product-detail'),
     path('register/', UserRegistrationView.as_view(), name='user-registration'), 
     path('login/', LoginView.as_view(), name='token-obtain-pair'), 
