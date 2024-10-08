@@ -80,7 +80,6 @@ class ProductListSerializer(serializers.ModelSerializer):
         )
 
     def get_image(self, obj):
-        # Obtém a primeira imagem ou retorna None se não houver imagens
         first_image = obj.images.first()  # Obtém a primeira imagem
         if first_image:
             return ProductImageSerializer(first_image).data  # Serializa a primeira imagem
