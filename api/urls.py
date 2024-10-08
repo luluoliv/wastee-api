@@ -9,7 +9,6 @@ from .views import (
     SellerViewSet,
     CategoryViewSet,
     ProductViewSet,
-    ProductDetailView,
     CommentViewSet,
     OrderViewSet,
     OrderItemViewSet,
@@ -34,7 +33,6 @@ router.register(r'products', ProductViewSet)
 
 
 urlpatterns = [
-    path('products/<int:pk>/', ProductDetailView.as_view(), name='product-detail'),
     path('register/', UserRegistrationView.as_view(), name='user-registration'), 
     path('login/', LoginView.as_view(), name='token-obtain-pair'), 
     path('logout/', LogoutView.as_view(), name='token-obtain-pair'), 
