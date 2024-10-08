@@ -73,20 +73,36 @@ class ProductImageSerializer(serializers.ModelSerializer):
 
 class ProductSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
+    seller_id = serializers.IntegerField(source='seller.id', read_only=True)  
+    seller_name = serializers.CharField(source='seller.user.name', read_only=True) 
+    category_name = serializers.CharField(source='category.name', read_only=True) 
 
     class Meta:
         model = Product
-        fields = ['id', 'title', 'description', 'discounted_price', 'category', 'images']
+        fields = (
+            'id', 'title', 'original_price', 'discounted_price', 'description', 'favorited', 'rate', 
+            'seller_id', 'seller_name', 'category_name', 'state', 'city', 'neighborhood', 'images'
+        )
 
     def validate_discounted_price(self, value):
+        price = self.instance.original_price if self.instance else self.initial_data.get('original_price')
+        if price is not None and value > price:
+            raise ValidationError("O preço com desconto não pode ser maior que o preço original.")
         if value < 0:
             raise ValidationError("O preço com desconto não pode ser negativo.")
         return value
 
+
+
     def validate_title(self, value):
-        if Product.objects.filter(title=value).exists():
-            raise ValidationError("Um produto com este título já existe.")
+        if self.instance:
+            if Product.objects.filter(title=value).exclude(id=self.instance.id).exists():
+                raise ValidationError("Um produto com este título já existe.")
+        else:
+            if Product.objects.filter(title=value).exists():
+                raise ValidationError("Um produto com este título já existe.")
         return value
+
 
 
 class CommentSerializer(serializers.ModelSerializer):
