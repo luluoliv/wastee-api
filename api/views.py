@@ -19,7 +19,7 @@ from .serializers import (
     SellerSerializer,
     LoginSerializer,
     CategorySerializer,
-    ProductSerializer,
+    ProductDetailSerializer,
     CommentSerializer,
     OrderSerializer,
     OrderItemSerializer,
@@ -166,7 +166,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
 class ProductListView(generics.ListAPIView):
     queryset = Product.objects.all()
-    serializer_class = ProductSerializer
+    serializer_class = ProductDetailSerializer
     permission_classes = [IsAuthenticated] 
 
     def get_queryset(self):
@@ -183,12 +183,12 @@ class ProductListView(generics.ListAPIView):
 
 class ProductDetailView(generics.RetrieveAPIView):
     queryset = Product.objects.all()
-    serializer_class = ProductSerializer
+    serializer_class = ProductDetailSerializer
     permission_classes = [IsAuthenticated] 
 
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
-    serializer_class = ProductSerializer
+    serializer_class = ProductDetailSerializer
     permission_classes = [IsAuthenticated] 
 
     def create(self, request, *args, **kwargs):
