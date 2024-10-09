@@ -167,8 +167,10 @@ class SetPasswordView(generics.UpdateAPIView):
 class SellerViewSet(viewsets.ModelViewSet):
     queryset = Seller.objects.all()
     serializer_class = SellerSerializer
-    permission_classes = [AllowAny] 
+    permission_classes = [IsAuthenticated]
 
+    def perform_create(self, serializer):
+        serializer.save()
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer

@@ -54,10 +54,21 @@ class ConfirmationCodeSerializer(serializers.ModelSerializer):
         model = ConfirmationCode
         fields = '__all__'
 
-class SellerSerializer(serializers.ModelSerializer):
+def validate_user(self, value):
     class Meta:
         model = Seller
         fields = '__all__'
+
+    def validate_user(self, value):
+        if not isinstance(value, User):
+            raise ValidationError("O usuário fornecido não é válido.")
+        if Seller.objects.filter(user=value).exists():
+            raise ValidationError("Este usuário já é um vendedor.")
+        return value
+
+    def create(self, validated_data):
+        user = validated_data['user']
+        return super().create(validated_data)
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
