@@ -171,7 +171,12 @@ class SellerViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
-        serializer.save()
+        seller = serializer.save()
+
+        user = seller.user  
+        user.user_type = 'seller'
+        user.save()
+
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer

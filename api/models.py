@@ -22,7 +22,7 @@ class UserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
     USER_TYPE_CHOICES = [
         ('normal', 'Normal'),
-        ('seller', 'Vendedor'),
+        ('seller', 'Seller'),
     ]
 
     email = models.EmailField(unique=True)
