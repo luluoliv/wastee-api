@@ -58,6 +58,8 @@ class LoginView(generics.GenericAPIView):
             'is_active': user.is_active,
             'is_staff': user.is_staff,
             'created_at': user.created_at,
+            'user_type': user.user_type,
+            
         }
 
         return Response({
