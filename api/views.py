@@ -230,6 +230,15 @@ class ProductViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         instance.delete()
         return Response({'message': 'Produto removido com sucesso!'}, status=status.HTTP_204_NO_CONTENT)
+    
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        seller_id = self.request.query_params.get('seller_id')
+
+        if seller_id:
+            queryset = queryset.filter(seller_id=seller_id)
+
+        return queryset
 
 
 
