@@ -40,7 +40,7 @@ class LoginView(generics.GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         
         try:
-            user = serializer.is_valid(raise_exception=True) 
+            serializer.is_valid(raise_exception=True) 
         except ValidationError as e:
             return Response({"errors": e.detail}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -51,9 +51,19 @@ class LoginView(generics.GenericAPIView):
 
         refresh = RefreshToken.for_user(user)
 
+        user_data = {
+            'id': user.id,
+            'email': user.email,
+            'name': user.name,
+            'is_active': user.is_active,
+            'is_staff': user.is_staff,
+            'created_at': user.created_at,
+        }
+
         return Response({
             'refresh': str(refresh),
             'access': str(refresh.access_token),
+            'user': user_data,
         }, status=status.HTTP_200_OK)
 
 
