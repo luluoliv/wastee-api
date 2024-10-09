@@ -16,7 +16,6 @@ from rest_framework_simplejwt.views import TokenBlacklistView
 from .models import User, ConfirmationCode, Seller, Category, Product, Comment, Order, OrderItem, Favorite, Chat, Message
 from .serializers import (
     UserSerializer,
-    SellerSerializer,
     LoginSerializer,
     CategorySerializer,
     ProductDetailSerializer,
@@ -26,6 +25,7 @@ from .serializers import (
     FavoriteSerializer,
     ChatSerializer,
     MessageSerializer,
+    SellerSerializer
 )
 from .utils import gerar_codigo_confirmacao, enviar_email_oauth
 
@@ -162,7 +162,6 @@ class SetPasswordView(generics.UpdateAPIView):
             }, status=status.HTTP_200_OK)
         else:
             return Response({'error': 'A senha é necessária'}, status=status.HTTP_400_BAD_REQUEST)
-
 
 class SellerViewSet(viewsets.ModelViewSet):
     queryset = Seller.objects.all()

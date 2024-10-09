@@ -27,7 +27,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'email', 'name', 'password', 'is_active', 'created_at']
+        fields = ['id', 'email', 'name', 'password', 'user_type', 'is_active', 'created_at']
         read_only_fields = ['id', 'is_active', 'created_at']
 
     def validate_email(self, value):
@@ -54,15 +54,15 @@ class ConfirmationCodeSerializer(serializers.ModelSerializer):
         model = ConfirmationCode
         fields = '__all__'
 
-def validate_user(self, value):
+class SellerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Seller
         fields = '__all__'
 
     def validate_user(self, value):
-        if not isinstance(value, User):
+        if not isinstance(value, User): 
             raise ValidationError("O usuário fornecido não é válido.")
-        if Seller.objects.filter(user=value).exists():
+        if Seller.objects.filter(user=value).exists(): 
             raise ValidationError("Este usuário já é um vendedor.")
         return value
 
