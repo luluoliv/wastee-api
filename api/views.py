@@ -170,7 +170,7 @@ class SetPasswordView(generics.UpdateAPIView):
 class SellerViewSet(viewsets.ModelViewSet):
     queryset = Seller.objects.all()
     serializer_class = SellerSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def perform_create(self, serializer):
         seller = serializer.save()
