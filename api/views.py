@@ -12,6 +12,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenBlacklistView
+from rest_framework.decorators import action
+
 
 from .models import User, ConfirmationCode, Seller, Category, Product, Comment, Order, OrderItem, Favorite, Chat, Message
 from .serializers import (
@@ -176,6 +178,12 @@ class SellerViewSet(viewsets.ModelViewSet):
         user = seller.user  
         user.user_type = 'seller'
         user.save()
+    
+    @action(detail=False, methods=['get'], url_path='by-user/(?P<user_id>[^/.]+)')
+    def by_user(self, request, user_id=None):
+        seller = get_object_or_404(Seller, user_id=user_id)
+        serializer = self.get_serializer(seller)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
