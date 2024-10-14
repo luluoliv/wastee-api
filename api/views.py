@@ -27,7 +27,8 @@ from .serializers import (
     FavoriteSerializer,
     ChatSerializer,
     MessageSerializer,
-    SellerSerializer
+    SellerSerializer,
+    ProductSerializer
 )
 from .utils import gerar_codigo_confirmacao, enviar_email_oauth
 
@@ -214,7 +215,7 @@ class ProductDetailView(generics.RetrieveAPIView):
 
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
-    serializer_class = ProductDetailSerializer
+    serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated] 
 
     def create(self, request, *args, **kwargs):

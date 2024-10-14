@@ -78,7 +78,7 @@ class CategorySerializer(serializers.ModelSerializer):
 class ProductImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductImage
-        fields = ['id', 'image', 'product']
+        fields = ['id', 'image']
 
 class ProductListSerializer(serializers.ModelSerializer):
     seller_name = serializers.CharField(source='seller.user.name', read_only=True)
@@ -91,13 +91,13 @@ class ProductListSerializer(serializers.ModelSerializer):
         )
 
     def get_image(self, obj):
-        first_image = obj.images.first()  # Obtém a primeira imagem
+        first_image = obj.images.first() 
         if first_image:
-            return ProductImageSerializer(first_image).data  # Serializa a primeira imagem
-        return None  # Retorna None se não houver imagens
+            return ProductImageSerializer(first_image).data  
+        return None  
 
 class ProductDetailSerializer(serializers.ModelSerializer):
-    image = serializers.SerializerMethodField()  # Alterado para retornar uma única imagem
+    image = serializers.SerializerMethodField() 
     seller_id = serializers.IntegerField(source='seller.id', read_only=True)
     seller_name = serializers.CharField(source='seller.user.name', read_only=True)
     category_name = serializers.CharField(source='category.name', read_only=True)
@@ -131,6 +131,30 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             if Product.objects.filter(title=value).exists():
                 raise ValidationError("Um produto com este título já existe.")
         return value
+    
+class ProductSerializer(serializers.ModelSerializer):
+    images = ProductImageSerializer(many=True)
+    category_id = serializers.IntegerField(write_only=True)
+
+    class Meta:
+        model = Product
+        fields = ['id', 'title', 'original_price', 'discounted_price', 'description', 'category', 'category_id', 'images']
+
+    def validate(self, attrs):
+        if 'images' not in attrs or not attrs['images']:
+            raise serializers.ValidationError('At least one image is required.')
+        return attrs
+
+    def create(self, validated_data):
+        images_data = validated_data.pop('images')
+        category_id = validated_data.pop('category_id')
+        category = Category.objects.get(id=category_id)
+        product = Product.objects.create(category=category, **validated_data)
+
+        for image_data in images_data:
+            ProductImage.objects.create(product=product, **image_data)
+
+        return product
 
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:

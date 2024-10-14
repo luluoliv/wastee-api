@@ -72,8 +72,8 @@ class Product(models.Model):
     rate = models.DecimalField(max_digits=2, decimal_places=1, null=True, blank=True)
     description = models.TextField()
     favorited = models.BooleanField(default=False)
-    seller = models.ForeignKey(Seller, on_delete=models.CASCADE)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    category = models.ForeignKey(Category, related_name='products', on_delete=models.CASCADE)
+    seller = models.ForeignKey(Seller, related_name='products', on_delete=models.CASCADE)
     state = models.CharField(max_length=100)
     city = models.CharField(max_length=100)
     neighborhood = models.CharField(max_length=100)
@@ -81,8 +81,7 @@ class Product(models.Model):
 
 class ProductImage(models.Model):
     product = models.ForeignKey(Product, related_name='images', on_delete=models.CASCADE)
-    image = models.URLField(default='https://example.com/default-image.jpg')
-
+    image = models.ImageField(upload_to='product_images/')
 class Comment(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
