@@ -1,5 +1,7 @@
 from rest_framework.routers import DefaultRouter
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 from .views import (
     UserViewSet,
     UserRegistrationView,
@@ -39,4 +41,4 @@ urlpatterns = [
     path('set-password/<int:pk>/', SetPasswordView.as_view(), name='set-password'),
     path('confirm/', ConfirmationCodeView.as_view(), name='confirmation-code'),  
     path('', include(router.urls)),
-]
+]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -219,7 +219,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated] 
 
     def create(self, request, *args, **kwargs):
-        """Criação de produto com validação específica para vendedores."""
+        """Criação de produto com validação específica para vendedores e upload de imagens."""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         product = serializer.save()
