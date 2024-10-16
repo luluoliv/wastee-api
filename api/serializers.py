@@ -146,7 +146,8 @@ class ProductSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        images_data = validated_data.pop('images', [])
+        images_data = validated_data.pop('images')
+        product = Product.objects.create(**validated_data)
         category_id = validated_data.pop('category_id')
         seller_id = validated_data.pop('seller_id')  # Retrieve seller_id from validated data
 

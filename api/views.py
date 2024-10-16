@@ -228,6 +228,13 @@ class ProductViewSet(viewsets.ModelViewSet):
         """Criação de produto com validação específica para vendedores e upload de imagens."""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+
+        if len(request.FILES.getlist('images')) > 6:
+            return Response(
+                {'error': 'Você pode enviar no máximo 6 imagens.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         product = serializer.save()
         return Response({'message': 'Produto criado com sucesso!', 'product': serializer.data}, status=status.HTTP_201_CREATED)
 
