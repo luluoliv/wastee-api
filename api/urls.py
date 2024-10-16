@@ -11,6 +11,7 @@ from .views import (
     SellerViewSet,
     CategoryViewSet,
     ProductViewSet,
+    ProductDetailViewSet,
     CommentViewSet,
     OrderViewSet,
     OrderItemViewSet,
@@ -32,6 +33,7 @@ router.register(r'favorites', FavoriteViewSet)
 router.register(r'chats', ChatViewSet)
 router.register(r'messages', MessageViewSet)
 router.register(r'products', ProductViewSet)
+router.register(r'product-detail', ProductDetailViewSet, basename='product-detail')
 
 
 urlpatterns = [

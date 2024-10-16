@@ -213,6 +213,12 @@ class ProductDetailView(generics.RetrieveAPIView):
     serializer_class = ProductDetailSerializer
     permission_classes = [IsAuthenticated] 
 
+    @action(detail=True, methods=['get'])
+    def detail(self, request, pk=None):
+        product = self.get_object()
+        serializer = ProductDetailSerializer(product, context={'request': request})
+        return Response(serializer.data)
+
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
