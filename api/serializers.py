@@ -81,10 +81,9 @@ class ProductImageSerializer(serializers.ModelSerializer):
         fields = ['image']
 
 
-
 class ProductListSerializer(serializers.ModelSerializer):
     seller_name = serializers.CharField(source='seller.user.name', read_only=True)
-    image = serializers.SerializerMethodField()  # Renomeado para refletir que é uma única imagem
+    image = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -93,13 +92,14 @@ class ProductListSerializer(serializers.ModelSerializer):
         )
 
     def get_image(self, obj):
-        first_image = obj.images.first() 
+        first_image = obj.images.first()
         if first_image:
-            return ProductImageSerializer(first_image).data  
-        return None  
+            return ProductImageSerializer(first_image).data
+        return None
+
 
 class ProductDetailSerializer(serializers.ModelSerializer):
-    image = serializers.SerializerMethodField() 
+    image = serializers.SerializerMethodField()
     seller_id = serializers.IntegerField(source='seller.id', read_only=True)
     seller_name = serializers.CharField(source='seller.user.name', read_only=True)
     category_name = serializers.CharField(source='category.name', read_only=True)
@@ -112,35 +112,33 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         )
 
     def get_image(self, obj):
-        first_image = obj.images.first() 
+        first_image = obj.images.first()
         if first_image:
-            return ProductImageSerializer(first_image).data  
-        return None 
+            return ProductImageSerializer(first_image).data
+        return None
 
     def validate_discounted_price(self, value):
         price = self.instance.original_price if self.instance else self.initial_data.get('original_price')
         if price is not None and value > price:
-            raise ValidationError("O preço com desconto não pode ser maior que o preço original.")
+            raise serializers.ValidationError("O preço com desconto não pode ser maior que o preço original.")
         if value < 0:
-            raise ValidationError("O preço com desconto não pode ser negativo.")
+            raise serializers.ValidationError("O preço com desconto não pode ser negativo.")
         return value
 
     def validate_title(self, value):
-        if self.instance:
-            if Product.objects.filter(title=value).exclude(id=self.instance.id).exists():
-                raise ValidationError("Um produto com este título já existe.")
-        else:
-            if Product.objects.filter(title=value).exists():
-                raise ValidationError("Um produto com este título já existe.")
+        if Product.objects.exclude(id=self.instance.id).filter(title=value).exists() if self.instance else Product.objects.filter(title=value).exists():
+            raise serializers.ValidationError("Um produto com este título já existe.")
         return value
-    
+
+
 class ProductSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, required=False)
     category_id = serializers.IntegerField(write_only=True)
+    seller_id = serializers.IntegerField(write_only=True)
 
     class Meta:
         model = Product
-        fields = ['id', 'title', 'original_price', 'discounted_price', 'description', 'category_id', 'images']
+        fields = ['id', 'title', 'original_price', 'discounted_price', 'description', 'category_id', 'images', 'seller_id']
 
     def validate_images(self, value):
         if len(value) > 6:
@@ -150,12 +148,21 @@ class ProductSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         images_data = validated_data.pop('images', [])
         category_id = validated_data.pop('category_id')
-        category = Category.objects.get(id=category_id)
-        product = Product.objects.create(category=category, **validated_data)
+        seller_id = validated_data.pop('seller_id')  # Retrieve seller_id from validated data
 
+        # Fetch the related category and seller
+        category = Category.objects.get(id=category_id)
+        seller = Seller.objects.get(id=seller_id)
+
+        # Create the Product instance
+        product = Product.objects.create(category=category, seller=seller, **validated_data)
+
+        # Create ProductImage instances
         for image_data in images_data:
             ProductImage.objects.create(product=product, **image_data)
+        
         return product
+
 
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
