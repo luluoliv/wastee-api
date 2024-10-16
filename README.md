@@ -34,4 +34,12 @@ venv\Scripts\activate     # Pa
 pip install -r requirements.txt
 
   ```
+3. **Commitar:**
+
+```bash
+git add .
+git commit -m "comentario"
+git push -u origin main
+
+  ```
 
