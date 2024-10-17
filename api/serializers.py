@@ -59,13 +59,12 @@ class ConfirmationCodeSerializer(serializers.ModelSerializer):
 class SellerSerializer(serializers.ModelSerializer):    
     cpf = serializers.CharField(max_length=11, required=True)
     birth_date = serializers.DateField(required=True)
-    rg_front_image = serializers.ImageField(required=True)
-    rg_back_image = serializers.ImageField(required=True)
-    selfie_image = serializers.ImageField(required=True)
+    rg = serializers.ImageField(required=True)
+    selfie_document = serializers.ImageField(required=True)
     city = serializers.CharField(max_length=100, required=True)
     state = serializers.CharField(max_length=100, required=True)
     neighborhood = serializers.CharField(max_length=100, required=True)
-    zip_code = serializers.CharField(max_length=10, required=True)
+    postal_code = serializers.CharField(max_length=10, required=True)
     user_id = serializers.IntegerField(write_only=True) 
 
     class Meta:
