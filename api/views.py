@@ -372,6 +372,6 @@ class MessageViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         message = serializer.save()
         return Response({'message': 'Mensagem enviada com sucesso!', 'message': serializer.data}, status=status.HTTP_201_CREATED)
-
+    
 
 
