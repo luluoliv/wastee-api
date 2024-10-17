@@ -5,6 +5,8 @@ from .models import User, ConfirmationCode, Seller, Category, Product, ProductIm
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 
+from datetime import date, timedelta
+
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
@@ -54,21 +56,44 @@ class ConfirmationCodeSerializer(serializers.ModelSerializer):
         model = ConfirmationCode
         fields = '__all__'
 
-class SellerSerializer(serializers.ModelSerializer):
+class SellerSerializer(serializers.ModelSerializer):    
+    cpf = serializers.CharField(max_length=11, required=True)
+    birth_date = serializers.DateField(required=True)
+    rg_front_image = serializers.ImageField(required=True)
+    rg_back_image = serializers.ImageField(required=True)
+    selfie_image = serializers.ImageField(required=True)
+    city = serializers.CharField(max_length=100, required=True)
+    state = serializers.CharField(max_length=100, required=True)
+    neighborhood = serializers.CharField(max_length=100, required=True)
+    zip_code = serializers.CharField(max_length=10, required=True)
+    user_id = serializers.IntegerField(write_only=True) 
+
     class Meta:
         model = Seller
         fields = '__all__'
 
-    def validate_user(self, value):
-        if not isinstance(value, User): 
-            raise ValidationError("O usuário fornecido não é válido.")
-        if Seller.objects.filter(user=value).exists(): 
-            raise ValidationError("Este usuário já é um vendedor.")
+    def validate_cpf(self, value):
+        if Seller.objects.filter(cpf=value).exists():
+            raise ValidationError("Este CPF já está em uso.")
         return value
 
+    def validate_birth_date(self, value):
+        if value >= date.today():
+            raise ValidationError("A data de nascimento não pode ser hoje ou uma data futura.")
+        return value
+
+    def validate(self, data):
+        return data
+
     def create(self, validated_data):
-        user = validated_data['user']
-        return super().create(validated_data)
+        user_id = validated_data.pop('user_id') 
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            raise ValidationError("O usuário com este ID não existe.")
+        
+        seller = Seller.objects.create(user=user, **validated_data) 
+        return seller
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -149,16 +174,13 @@ class ProductSerializer(serializers.ModelSerializer):
         images_data = validated_data.pop('images')
         product = Product.objects.create(**validated_data)
         category_id = validated_data.pop('category_id')
-        seller_id = validated_data.pop('seller_id')  # Retrieve seller_id from validated data
+        seller_id = validated_data.pop('seller_id')
 
-        # Fetch the related category and seller
         category = Category.objects.get(id=category_id)
         seller = Seller.objects.get(id=seller_id)
 
-        # Create the Product instance
         product = Product.objects.create(category=category, seller=seller, **validated_data)
 
-        # Create ProductImage instances
         for image_data in images_data:
             ProductImage.objects.create(product=product, **image_data)
         

@@ -1,5 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+import re
+from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -52,12 +55,26 @@ class ConfirmationCode(models.Model):
 
 class Seller(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    address = models.CharField(max_length=255)
+    rg = models.ImageField(upload_to='seller_documents/rg/', default='seller_documents/rg/default.jpg')
+    selfie_document = models.ImageField(upload_to='seller_documents/selfie/', default='seller_documents/selfie/default.jpg')
+    cpf = models.CharField(max_length=11)
+    birth_date = models.DateField(default='2000-01-01')
     postal_code = models.CharField(max_length=20)
     state = models.CharField(max_length=50)
     city = models.CharField(max_length=100)
     neighborhood = models.CharField(max_length=100)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def clean(self):
+        cpf_pattern = re.compile(r'^\d{11}$')
+        if not cpf_pattern.match(self.cpf):
+            raise ValidationError("CPF inválido. Deve conter 11 dígitos numéricos.")
+
+        if self.birth_date > timezone.now().date():
+            raise ValidationError("Data de nascimento não pode ser no futuro.")
+
+    def __str__(self):
+        return f'{self.user.name} - CPF: {self.cpf}'
 
 
 class Category(models.Model):

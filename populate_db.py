@@ -4,21 +4,27 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'wastee.settings')
 import django
 django.setup()
 
+
 from api.models import User, Seller, Category, Product, ProductImage, Comment, Order, OrderItem, Favorite, Chat, Message
 
-# Create popular categories
-popular_categories = [
-    {'name': 'Smartphones', 'description': 'Latest smartphones from various brands.'},
-    {'name': 'Tablets', 'description': 'Tablets for work and entertainment.'},
-    {'name': 'Computadores', 'description': 'Desktops and laptops for all purposes.'},
-    {'name': 'Monitores', 'description': 'High-quality monitors for every need.'},
-    {'name': 'Impressoras', 'description': 'Printers for home and office use.'},
-    {'name': 'Periféricos', 'description': 'Peripherals for enhanced productivity.'},
-    {'name': 'Câmeras', 'description': 'Digital cameras for photography enthusiasts.'},
-    {'name': 'Videogames', 'description': 'Latest video games and consoles.'},
-]
+from django.db import migrations
 
-# Create Category instances
-for category in popular_categories:
-    Category.objects.create(name=category['name'], description=category['description'])
+def remove_duplicate_cpfs(apps, schema_editor):
+    Seller = apps.get_model('your_app_name', 'Seller')
+    # Use a set to track seen CPFs
+    seen_cpfs = set()
+    for seller in Seller.objects.all():
+        if seller.cpf in seen_cpfs:
+            seller.delete()  # or update to make unique
+        else:
+            seen_cpfs.add(seller.cpf)
+
+class Migration(migrations.Migration):
+    dependencies = [
+        ('your_app_name', 'previous_migration_name'),
+    ]
+
+    operations = [
+        migrations.RunPython(remove_duplicate_cpfs),
+    ]
 
