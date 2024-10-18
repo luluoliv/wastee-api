@@ -91,7 +91,7 @@ class SellerSerializer(serializers.ModelSerializer):
         except User.DoesNotExist:
             raise ValidationError("O usuário com este ID não existe.")
         
-        seller = Seller.objects.create(user=user, **validated_data) 
+        seller = Seller.objects.create(user=user, **{k: v for k, v in validated_data.items() if k != 'user'})
         return seller
 
 class CategorySerializer(serializers.ModelSerializer):
