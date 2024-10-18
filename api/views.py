@@ -175,20 +175,26 @@ class SellerViewSet(viewsets.ModelViewSet):
     serializer_class = SellerSerializer
     permission_classes = [AllowAny]
 
-    def perform_create(self, serializer):
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
         seller = serializer.save()
-
-        rg_file = self.request.FILES.get('rg')
-        selfie_file = self.request.FILES.get('selfie_document')
+        
+        print(request.FILES)
+        rg_file = request.FILES.get('rg') 
+        selfie_file = request.FILES.get('selfie_document') 
 
         if rg_file:
-            seller.rg.save(rg_file.name, rg_file)
+            seller.rg.save(rg_file.name, rg_file) 
         if selfie_file:
-            seller.selfie_document.save(selfie_file.name, selfie_file)
-
+            seller.selfie_document.save(selfie_file.name, selfie_file) 
+            
         user = seller.user  
         user.user_type = 'seller'
         user.save()
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=['get'], url_path='by-user/(?P<user_id>[^/.]+)')
     def by_user(self, request, user_id=None):
