@@ -65,7 +65,7 @@ class SellerSerializer(serializers.ModelSerializer):
     state = serializers.CharField(max_length=100, required=True)
     neighborhood = serializers.CharField(max_length=100, required=True)
     postal_code = serializers.CharField(max_length=10, required=True)
-    user_id = serializers.IntegerField(write_only=True) 
+    user = serializers.IntegerField(write_only=True) 
 
     class Meta:
         model = Seller
@@ -85,9 +85,9 @@ class SellerSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        user_id = validated_data.pop('user_id') 
+        user = validated_data.pop('user') 
         try:
-            user = User.objects.get(id=user_id)
+            user = User.objects.get(id=user)
         except User.DoesNotExist:
             raise ValidationError("O usuário com este ID não existe.")
         
