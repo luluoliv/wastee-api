@@ -1,30 +1,15 @@
 import os
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'wastee.settings')
+from django.apps import AppConfig
+from django.conf import settings
 
-import django
-django.setup()
+class YourAppConfig(AppConfig):
+    name = 'api'
 
-
-from api.models import User, Seller, Category, Product, ProductImage, Comment, Order, OrderItem, Favorite, Chat, Message
-
-from django.db import migrations
-
-def remove_duplicate_cpfs(apps, schema_editor):
-    Seller = apps.get_model('your_app_name', 'Seller')
-    # Use a set to track seen CPFs
-    seen_cpfs = set()
-    for seller in Seller.objects.all():
-        if seller.cpf in seen_cpfs:
-            seller.delete()  # or update to make unique
-        else:
-            seen_cpfs.add(seller.cpf)
-
-class Migration(migrations.Migration):
-    dependencies = [
-        ('your_app_name', 'previous_migration_name'),
-    ]
-
-    operations = [
-        migrations.RunPython(remove_duplicate_cpfs),
-    ]
-
+    def ready(self):
+        # Caminho do diretório de mídia
+        media_root = os.path.join(settings.MEDIA_ROOT, 'seller_documents', 'rg')
+        selfie_root = os.path.join(settings.MEDIA_ROOT, 'seller_documents', 'selfie')
+        
+        # Criar diretórios se não existirem
+        os.makedirs(media_root, exist_ok=True)
+        os.makedirs(selfie_root, exist_ok=True)
