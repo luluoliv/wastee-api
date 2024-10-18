@@ -181,12 +181,32 @@ class SellerViewSet(viewsets.ModelViewSet):
         user = seller.user  
         user.user_type = 'seller'
         user.save()
-    
+
     @action(detail=False, methods=['get'], url_path='by-user/(?P<user_id>[^/.]+)')
     def by_user(self, request, user_id=None):
         seller = get_object_or_404(Seller, user_id=user_id)
         serializer = self.get_serializer(seller)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        seller = serializer.save()
+
+        rg_file = request.FILES.get('rg') 
+        selfie_file = request.FILES.get('selfie_document') 
+
+        if rg_file:
+            seller.rg.save(rg_file.name, rg_file) 
+        if selfie_file:
+            seller.selfie_document.save(selfie_file.name, selfie_file) 
+        
+        user = seller.user  
+        user.user_type = 'seller'
+        user.save()
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
@@ -228,13 +248,19 @@ class ProductViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated] 
 
     def create(self, request, *args, **kwargs):
+        images = request.FILES.getlist('images')
+        
+        if len(images) > 6:
+            return Response({'error': 'Você pode enviar no máximo 6 imagens.'}, status=status.HTTP_400_BAD_REQUEST)
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        if len(request.FILES.getlist('images')) > 6:
-            return Response({'error': 'Você pode enviar no máximo 6 imagens.'}, status=status.HTTP_400_BAD_REQUEST)
+        product = serializer.create(serializer.validated_data)
 
-        product = serializer.save()
+        for image in images:
+            product.images.create(image=image)
+
         return Response({'message': 'Produto criado com sucesso!', 'product': serializer.data}, status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):

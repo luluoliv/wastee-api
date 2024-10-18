@@ -170,8 +170,7 @@ class ProductSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        images_data = validated_data.pop('images')
-        product = Product.objects.create(**validated_data)
+        images_data = validated_data.pop('images', [])
         category_id = validated_data.pop('category_id')
         seller_id = validated_data.pop('seller_id')
 
@@ -182,7 +181,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
         for image_data in images_data:
             ProductImage.objects.create(product=product, **image_data)
-        
+
         return product
 
 
