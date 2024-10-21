@@ -31,6 +31,7 @@ Antes de começar, certifique-se de ter os seguintes itens instalados:
 
 ```bash
 pip install -r requirements.txt
+poetry install
 
   ```
 3. **Rodar:**
