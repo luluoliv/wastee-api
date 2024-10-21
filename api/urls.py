@@ -41,4 +41,4 @@ urlpatterns = [
     path('set-password/<int:pk>/', SetPasswordView.as_view(), name='set-password'),
     path('confirm/', ConfirmationCodeView.as_view(), name='confirmation-code'),  
     path('', include(router.urls)),
-]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]

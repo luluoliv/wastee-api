@@ -55,8 +55,8 @@ class ConfirmationCode(models.Model):
 
 class Seller(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    rg = models.ImageField(upload_to='media/seller_documents/rg/', default='seller_documents/rg/default.jpg')
-    selfie_document = models.ImageField(upload_to='media/seller_documents/selfie/', default='seller_documents/selfie/default.jpg')
+    rg = models.ImageField(upload_to='seller_documents/rg/', default='seller_documents/rg/default.jpg')
+    selfie_document = models.ImageField(upload_to='seller_documents/selfie/', default='seller_documents/selfie/default.jpg')
     cpf = models.CharField(max_length=11)
     birth_date = models.DateField(default='2000-01-01')
     postal_code = models.CharField(max_length=20)
@@ -98,7 +98,7 @@ class Product(models.Model):
 
 class ProductImage(models.Model):
     product = models.ForeignKey(Product, related_name='images', on_delete=models.CASCADE)
-    image = models.ImageField(upload_to='media/product_images/')
+    image = models.ImageField(upload_to='product_images/')
     
 class Comment(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)

@@ -181,7 +181,6 @@ class SellerViewSet(viewsets.ModelViewSet):
         
         seller = serializer.save()
         
-        print(request.FILES)
         rg_file = request.FILES.get('rg') 
         selfie_file = request.FILES.get('selfie_document') 
 
