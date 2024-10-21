@@ -24,18 +24,22 @@ Antes de começar, certifique-se de ter os seguintes itens instalados:
 2. **Crie um ambiente virtual (opcional, mas recomendado):**
 
 ```bash
-virtualenv venv
-venv\Scripts\activate     # Pa
+.\venv\Scripts\activate
   ```
 
 2. **Instale as dependências:**
 
 ```bash
 pip install -r requirements.txt
+poetry install
 
   ```
-3. **Commitar:**
+3. **Rodar:**
+```bash
+python manage.py runserver
 
+  ```
+4. **Commitar:**
 ```bash
 git add .
 git commit -m "comentario"
