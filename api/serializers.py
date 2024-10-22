@@ -86,6 +86,9 @@ class SellerSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = validated_data.pop('user') 
+
+        if Seller.objects.filter(user=user).exists():
+            raise serializers.ValidationError(f"O user {user.email} já é um vendedor.")
         try:
             user = User.objects.get(id=user)
         except User.DoesNotExist:
