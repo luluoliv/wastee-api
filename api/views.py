@@ -374,13 +374,20 @@ class FavoriteViewSet(viewsets.ModelViewSet):
 class ChatViewSet(viewsets.ModelViewSet):
     queryset = Chat.objects.all()
     serializer_class = ChatSerializer
-    permission_classes = [IsAuthenticated]  
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
-        if not user.is_authenticated: 
-            return Chat.objects.none() 
-        return Chat.objects.filter(buyer=user) | Chat.objects.filter(seller=user)
+        if not user.is_authenticated:
+            return Chat.objects.none()
+
+        try:
+            seller = Seller.objects.get(user=user)
+        except Seller.DoesNotExist:
+            seller = None
+        
+        # Return chats for both buyer and seller
+        return Chat.objects.filter(buyer=user) | Chat.objects.filter(seller=seller)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -391,12 +398,12 @@ class ChatViewSet(viewsets.ModelViewSet):
 class MessageViewSet(viewsets.ModelViewSet):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
-    permission_classes = [IsAuthenticated] 
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
-        if not user.is_authenticated: 
-            return Message.objects.none()  
+        if not user.is_authenticated:
+            return Message.objects.none()
         return Message.objects.filter(chat__buyer=user) | Message.objects.filter(chat__seller=user)
 
     def create(self, request, *args, **kwargs):
@@ -405,7 +412,5 @@ class MessageViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         message = serializer.save()
         return Response({'message': 'Mensagem enviada com sucesso!', 'message': serializer.data}, status=status.HTTP_201_CREATED)
-
-
 
         

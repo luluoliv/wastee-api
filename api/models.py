@@ -130,8 +130,8 @@ class Favorite(models.Model):
 
 
 class Chat(models.Model):
-    buyer = models.ForeignKey(User, related_name='buyer', on_delete=models.CASCADE)
-    seller = models.ForeignKey(Seller, related_name='seller', on_delete=models.CASCADE)
+    buyer = models.ForeignKey(User, related_name='chats_as_buyer', on_delete=models.CASCADE)
+    seller = models.ForeignKey(Seller, related_name='chats_as_seller', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, null=True, blank=True, on_delete=models.CASCADE)
     started_at = models.DateTimeField(auto_now_add=True)
 

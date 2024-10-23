@@ -216,9 +216,11 @@ class FavoriteSerializer(serializers.ModelSerializer):
         return data
 
 class MessageSerializer(serializers.ModelSerializer):
+    sender_name = serializers.CharField(source='sender.name', read_only=True)
+
     class Meta:
         model = Message
-        fields = ['id', 'chat', 'sender', 'content', 'timestamp']
+        fields = ['id', 'chat', 'sender', 'message', 'sent_at', 'sender_name']  
 
     def validate(self, data):
         chat = data['chat']
@@ -229,13 +231,38 @@ class MessageSerializer(serializers.ModelSerializer):
 
 class ChatSerializer(serializers.ModelSerializer):
     messages = MessageSerializer(many=True, read_only=True)
+    last_message = serializers.SerializerMethodField()
+    seller_name = serializers.CharField(source='seller.user.name', read_only=True)
 
     class Meta:
         model = Chat
-        fields = ['id', 'participants', 'created_at', 'messages']
+        fields = ['id','buyer', 'seller', 'seller_name', 'messages', 'started_at', 'last_message']
+
+    def get_last_message(self, obj):
+        """Retorna a última mensagem do chat, se existir."""
+        last_message = obj.message_set.last()  
+        if last_message:
+            return {
+                'id': last_message.id,
+                'message': last_message.message,
+                'sent_at': last_message.sent_at,  
+            }
+        return None
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        print(representation)  # Isso ajudará a ver o que está sendo retornado.
+        return representation
 
     def validate(self, data):
-        participants = data['participants']
-        if len(participants) < 2:
-            raise ValidationError('Um chat deve ter pelo menos dois participantes.')
+        buyer = data.get('buyer')
+        seller = data.get('seller')
+
+        if not buyer or not seller:
+            raise serializers.ValidationError('Um chat deve ter tanto um comprador quanto um vendedor.')
+
+        if buyer == seller.user:  
+            raise serializers.ValidationError('O comprador e o vendedor não podem ser a mesma pessoa.')
+
         return data
+
