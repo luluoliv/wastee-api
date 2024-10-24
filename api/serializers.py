@@ -126,7 +126,7 @@ class ProductListSerializer(serializers.ModelSerializer):
 
 
 class ProductDetailSerializer(serializers.ModelSerializer):
-    image = serializers.SerializerMethodField()
+    images = ProductImageSerializer(many=True, read_only=True) 
     seller_id = serializers.IntegerField(source='seller.id', read_only=True)
     seller_name = serializers.CharField(source='seller.user.name', read_only=True)
     category_name = serializers.CharField(source='category.name', read_only=True)
@@ -135,7 +135,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         model = Product
         fields = (
             'id', 'title', 'original_price', 'discounted_price', 'description', 'favorited', 'rate', 
-            'seller_id', 'seller_name', 'category_name', 'state', 'city', 'neighborhood', 'image'
+            'seller_id', 'seller_name', 'category_name', 'state', 'city', 'neighborhood', 'images'
         )
 
     def get_image(self, obj):
@@ -152,20 +152,16 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("O preço com desconto não pode ser negativo.")
         return value
 
-    def validate_title(self, value):
-        if Product.objects.exclude(id=self.instance.id).filter(title=value).exists() if self.instance else Product.objects.filter(title=value).exists():
-            raise serializers.ValidationError("Um produto com este título já existe.")
-        return value
-
 
 class ProductSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, required=False)
     category_id = serializers.IntegerField(write_only=True)
     seller_id = serializers.IntegerField(write_only=True)
+    seller_name = serializers.CharField(source='seller.user.name', read_only=True)
 
     class Meta:
         model = Product
-        fields = ['id', 'title', 'original_price', 'discounted_price', 'description', 'category_id', 'images', 'seller_id']
+        fields = ['id', 'title', 'original_price', 'discounted_price', 'description', 'category_id', 'images', 'seller_id', 'seller_name']
 
     def validate_images(self, value):
         if len(value) > 6:

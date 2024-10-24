@@ -3,6 +3,7 @@ from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
+from django.db.models import Avg
 from django.utils import timezone
 from rest_framework import generics, status, viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -275,13 +276,19 @@ class ProductViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated] 
 
     def create(self, request, *args, **kwargs):
+        images = request.FILES.getlist('images')
+        
+        if len(images) > 6:
+            return Response({'error': 'Você pode enviar no máximo 6 imagens.'}, status=status.HTTP_400_BAD_REQUEST)
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        if len(request.FILES.getlist('images')) > 6:
-            return Response({'error': 'Você pode enviar no máximo 6 imagens.'}, status=status.HTTP_400_BAD_REQUEST)
-
         product = serializer.save()
+
+        for image in images:
+            product.images.create(image=image)
+
         return Response({'message': 'Produto criado com sucesso!', 'product': serializer.data}, status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):
@@ -296,7 +303,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         instance.delete()
         return Response({'message': 'Produto removido com sucesso!'}, status=status.HTTP_204_NO_CONTENT)
-    
+
     def get_queryset(self):
         queryset = super().get_queryset()
         seller_id = self.request.query_params.get('seller_id')
@@ -306,22 +313,34 @@ class ProductViewSet(viewsets.ModelViewSet):
 
         return queryset
 
+
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
-    permission_classes = [IsAuthenticated] 
+    permission_classes = [IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         comment = serializer.save()
+
+        product = comment.product
+        self.update_product_rating(product)
+
         return Response({'message': 'Comentário adicionado com sucesso!', 'comment': serializer.data}, status=status.HTTP_201_CREATED)
+
+    def update_product_rating(self, product):
+        comments = Comment.objects.filter(product=product)
+        if comments.exists():
+            average_rating = comments.aggregate(Avg('rating'))['rating__avg']
+            product.rate = average_rating
+            product.save()
 
     def list(self, request, *args, **kwargs):
         product_id = self.request.query_params.get('product_id')
         queryset = self.queryset.filter(product_id=product_id)
         serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.data)
 
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
@@ -349,27 +368,76 @@ class OrderItemViewSet(viewsets.ModelViewSet):
     serializer_class = OrderItemSerializer
     permission_classes = [IsAuthenticated] 
 
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework import viewsets
+from rest_framework.permissions import IsAuthenticated
+from .models import Favorite, Product
+from .serializers import FavoriteSerializer
+
 class FavoriteViewSet(viewsets.ModelViewSet):
     queryset = Favorite.objects.all()
     serializer_class = FavoriteSerializer
-    permission_classes = [IsAuthenticated] 
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return Favorite.objects.filter(user=self.request.user)
+    
+    def list(self, request, *args, **kwargs):
+        favorites = self.get_queryset()
+        product_ids = favorites.values_list('product_id', flat=True)
+
+        products = Product.objects.filter(id__in=product_ids, favorited=True)
+
+        serializer = ProductDetailSerializer(products, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            favorite = serializer.save()
-            logger.info(f"Produto {favorite.product.title} adicionado aos favoritos pelo usuário {request.user.email}.")
-            return Response({'message': 'Produto adicionado aos favoritos com sucesso!', 'favorite': serializer.data}, status=status.HTTP_201_CREATED)
-        return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+
+        product = serializer.validated_data['product']
+
+        if Favorite.objects.filter(user=request.user, product=product).exists():
+            return Response({'error': 'Este produto já está nos favoritos.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        favorite = serializer.save()
+        product.favorited = True
+        product.save()
+
+        product.refresh_from_db()
+        updated_product_serializer = ProductDetailSerializer(product)
+
+        logger.info(f"Produto {favorite.product.title} adicionado aos favoritos pelo usuário {request.user.email}.")
+        return Response({
+            'message': 'Produto adicionado aos favoritos com sucesso!',
+            'favorite': serializer.data,
+            'product': updated_product_serializer.data
+        }, status=status.HTTP_201_CREATED)
 
     def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        instance.delete()
-        logger.info(f"Produto {instance.product.title} removido dos favoritos pelo usuário {request.user.email}.")
-        return Response({'message': 'Produto removido dos favoritos com sucesso!'}, status=status.HTTP_204_NO_CONTENT)
+        product_id = kwargs.get('pk')
+        user = request.user
+
+        try:
+            favorite = Favorite.objects.get(user=user, product_id=product_id)
+            favorite.delete()
+
+            product = Product.objects.get(id=product_id)
+            product.favorited = False
+            product.save()
+            product.refresh_from_db()
+            updated_product_serializer = ProductDetailSerializer(product)
+
+            return Response({
+                'detail': 'Produto removido dos favoritos.',
+                'product': updated_product_serializer.data
+            }, status=status.HTTP_204_NO_CONTENT)
+        except Favorite.DoesNotExist:
+            return Response({'detail': 'Produto não encontrado nos favoritos.'}, status=status.HTTP_404_NOT_FOUND)
+        except Product.DoesNotExist:
+            return Response({'detail': 'Produto não encontrado.'}, status=status.HTTP_404_NOT_FOUND)
 
 class ChatViewSet(viewsets.ModelViewSet):
     queryset = Chat.objects.all()
