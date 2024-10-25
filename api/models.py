@@ -95,6 +95,15 @@ class Product(models.Model):
     city = models.CharField(max_length=100)
     neighborhood = models.CharField(max_length=100)
 
+    def update_rating(self):
+        comments = self.comments.all() 
+        if comments:
+            total_rating = sum(comment.rating for comment in comments) 
+            self.rate = total_rating / comments.count() 
+        else:
+            self.rate = 0 
+        self.save() 
+
 
 class ProductImage(models.Model):
     product = models.ForeignKey(Product, related_name='images', on_delete=models.CASCADE)
@@ -133,11 +142,15 @@ class Chat(models.Model):
     buyer = models.ForeignKey(User, related_name='chats_as_buyer', on_delete=models.CASCADE)
     seller = models.ForeignKey(Seller, related_name='chats_as_seller', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, null=True, blank=True, on_delete=models.CASCADE)
+    participants = models.ManyToManyField(User, related_name='chats', blank=True)  # Adicionado
     started_at = models.DateTimeField(auto_now_add=True)
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.participants.add(self.buyer, self.seller) 
 
 class Message(models.Model):
-    chat = models.ForeignKey(Chat, on_delete=models.CASCADE)
+    chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name='messages')
     sender = models.ForeignKey(User, on_delete=models.CASCADE)
     message = models.TextField()
     sent_at = models.DateTimeField(auto_now_add=True)

@@ -1,6 +1,7 @@
 import logging
 from django.contrib.auth.hashers import make_password
-from django.core.exceptions import ValidationError
+from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 from django.db.models import Avg
@@ -12,6 +13,8 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenBlacklistView
 from rest_framework.decorators import action
+
+from django.db.models import Q
 
 from .models import (
     User, ConfirmationCode, Seller, Category, Product,
@@ -27,9 +30,7 @@ from .utils import gerar_codigo_confirmacao, enviar_email_oauth
 
 logger = logging.getLogger(__name__)
 
-class YourClassName:
-    permission_classes = [AllowAny]
-
+User = get_user_model()
 
 class LoginView(generics.GenericAPIView):
     serializer_class = LoginSerializer
@@ -451,5 +452,3 @@ class MessageViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         message = serializer.save()
         return Response({'message': 'Mensagem enviada com sucesso!', 'message': serializer.data}, status=status.HTTP_201_CREATED)
-
-        

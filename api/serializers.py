@@ -56,46 +56,6 @@ class ConfirmationCodeSerializer(serializers.ModelSerializer):
         model = ConfirmationCode
         fields = '__all__'
 
-class SellerSerializer(serializers.ModelSerializer):    
-    cpf = serializers.CharField(max_length=11, required=True)
-    birth_date = serializers.DateField(required=True)
-    rg = serializers.ImageField(required=True)
-    selfie_document = serializers.ImageField(required=True)
-    city = serializers.CharField(max_length=100, required=True)
-    state = serializers.CharField(max_length=100, required=True)
-    neighborhood = serializers.CharField(max_length=100, required=True)
-    postal_code = serializers.CharField(max_length=10, required=True)
-    user = serializers.IntegerField(write_only=True) 
-
-    class Meta:
-        model = Seller
-        fields = '__all__'
-
-    def validate_cpf(self, value):
-        if Seller.objects.filter(cpf=value).exists():
-            raise ValidationError("Este CPF já está em uso.")
-        return value
-
-    def validate_birth_date(self, value):
-        if value >= date.today():
-            raise ValidationError("A data de nascimento não pode ser hoje ou uma data futura.")
-        return value
-
-    def validate(self, data):
-        return data
-
-    def create(self, validated_data):
-        user = validated_data.pop('user') 
-
-        if Seller.objects.filter(user=user).exists():
-            raise serializers.ValidationError(f"O user {user.email} já é um vendedor.")
-        try:
-            user = User.objects.get(id=user)
-        except User.DoesNotExist:
-            raise ValidationError("O usuário com este ID não existe.")
-        
-        seller = Seller.objects.create(user=user, **{k: v for k, v in validated_data.items() if k != 'user'})
-        return seller
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -136,7 +96,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         model = Product
         fields = (
             'id', 'title', 'original_price', 'discounted_price', 'description', 'favorited', 'rate', 
-            'seller_id', 'seller_name', 'category_name', 'state', 'city', 'neighborhood', 'images' 'chat_id'
+            'seller_id', 'seller_name', 'category_name', 'state', 'city', 'neighborhood', 'images', 'chat_id'
         )
 
     def get_chat_id(self, obj):
@@ -162,6 +122,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         return value
 
 
+
 class ProductSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, required=False)
     category_id = serializers.IntegerField(write_only=True)
@@ -170,7 +131,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['id', 'title', 'original_price', 'discounted_price', 'description', 'category_id', 'images', 'seller_id', 'seller_name']
+        fields = ['id', 'title', 'original_price', 'discounted_price', 'description', 'category_id', 'images', 'seller_id', 'seller_name', 'favorited']
 
     def validate_images(self, value):
         if len(value) > 6:
@@ -193,10 +154,63 @@ class ProductSerializer(serializers.ModelSerializer):
         return product
 
 
+class SellerSerializer(serializers.ModelSerializer):    
+    cpf = serializers.CharField(max_length=11, required=True)
+    birth_date = serializers.DateField(required=True)
+    rg = serializers.ImageField(required=True)
+    selfie_document = serializers.ImageField(required=True)
+    city = serializers.CharField(max_length=100, required=True)
+    state = serializers.CharField(max_length=100, required=True)
+    neighborhood = serializers.CharField(max_length=100, required=True)
+    postal_code = serializers.CharField(max_length=10, required=True)
+    user = UserSerializer(read_only=True) 
+    products = ProductSerializer(many=True, read_only=True)
+    comments = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Seller
+        fields = '__all__'
+
+    def validate_cpf(self, value):
+        if Seller.objects.filter(cpf=value).exists():
+            raise ValidationError("Este CPF já está em uso.")
+        return value
+
+    def validate_birth_date(self, value):
+        if value >= date.today():
+            raise ValidationError("A data de nascimento não pode ser hoje ou uma data futura.")
+        return value
+
+    def validate(self, data):
+        return data
+    
+    def get_comments(self, obj):
+        products = obj.products.all()
+        comments = Comment.objects.filter(product__in=products)
+        return CommentSerializer(comments, many=True).data
+
+    def create(self, validated_data):
+        user = validated_data.pop('user') 
+
+        if Seller.objects.filter(user=user).exists():
+            raise serializers.ValidationError(f"O user {user.email} já é um vendedor.")
+        try:
+            user = User.objects.get(id=user)
+        except User.DoesNotExist:
+            raise ValidationError("O usuário com este ID não existe.")
+        
+        seller = Seller.objects.create(user=user, **{k: v for k, v in validated_data.items() if k != 'user'})
+        return seller
+
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = '__all__'
+
+    def create(self, validated_data):
+        comment = super().create(validated_data)
+        comment.product.update_rating()
+        return comment
 
 class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:
@@ -222,17 +236,24 @@ class FavoriteSerializer(serializers.ModelSerializer):
 
 class MessageSerializer(serializers.ModelSerializer):
     sender_name = serializers.CharField(source='sender.name', read_only=True)
+    chat = serializers.PrimaryKeyRelatedField(queryset=Chat.objects.all())
 
     class Meta:
         model = Message
-        fields = ['id', 'chat', 'sender', 'message', 'sent_at', 'sender_name']  
+        fields = ['id', 'chat', 'sender', 'message', 'sent_at', 'sender_name']
 
     def validate(self, data):
-        chat = data['chat']
+        chat = data.get('chat')
+        if chat is None:
+            raise serializers.ValidationError('Chat deve ser enviado.')
+
         user = self.context['request'].user
-        if user not in chat.participants.all():
-            raise ValidationError('Você não pode enviar mensagens neste chat.')
+
+        if user.id != chat.buyer.id and user.id != chat.seller.user.id:
+            raise serializers.ValidationError('Você não tem permissão para enviar mensagens neste chat.')
+
         return data
+
 
 class ChatSerializer(serializers.ModelSerializer):
     messages = MessageSerializer(many=True, read_only=True)
@@ -245,19 +266,19 @@ class ChatSerializer(serializers.ModelSerializer):
 
     def get_last_message(self, obj):
         """Retorna a última mensagem do chat, se existir."""
-        last_message = obj.message_set.last()  
+        last_message = obj.messages.last()  
         if last_message:
             return {
                 'id': last_message.id,
                 'message': last_message.message,
                 'sent_at': last_message.sent_at,  
+                'sender_name': last_message.sender.name,
+                'sender_id': last_message.sender.id,
             }
         return None
     
-    def to_representation(self, instance):
-        representation = super().to_representation(instance)
-        print(representation)  # Isso ajudará a ver o que está sendo retornado.
-        return representation
+    def get_participants(self, obj):
+        return [participant.name for participant in obj.participants.all()]
 
     def validate(self, data):
         buyer = data.get('buyer')
@@ -270,4 +291,3 @@ class ChatSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('O comprador e o vendedor não podem ser a mesma pessoa.')
 
         return data
-

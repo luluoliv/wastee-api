@@ -16,6 +16,7 @@ from .views import (
     OrderViewSet,
     OrderItemViewSet,
     FavoriteViewSet,
+    MessageViewSet,
     ChatViewSet,
     SetPasswordView
 )
@@ -30,6 +31,7 @@ router.register(r'orders', OrderViewSet)
 router.register(r'order-items', OrderItemViewSet)
 router.register(r'favorites', FavoriteViewSet)
 router.register(r'chats', ChatViewSet)
+router.register(r'messages', MessageViewSet)
 router.register(r'products', ProductViewSet)
 router.register(r'product-detail', ProductDetailViewSet, basename='product-detail')
 
