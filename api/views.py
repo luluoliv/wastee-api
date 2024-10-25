@@ -250,40 +250,6 @@ class ProductViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        product = serializer.create(serializer.validated_data)
-
-        for image in images:
-            product.images.create(image=image)
-
-        return Response({'message': 'Produto criado com sucesso!', 'product': serializer.data}, status=status.HTTP_201_CREATED)
-
-    def update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response({'message': 'Produto atualizado com sucesso!', 'product': serializer.data}, status=status.HTTP_200_OK)
-
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        instance.delete()
-        return Response({'message': 'Produto removido com sucesso!'}, status=status.HTTP_204_NO_CONTENT)
-       
-class ProductViewSet(viewsets.ModelViewSet):
-    queryset = Product.objects.all()
-    serializer_class = ProductSerializer
-    permission_classes = [IsAuthenticated] 
-
-    def create(self, request, *args, **kwargs):
-        images = request.FILES.getlist('images')
-        
-        if len(images) > 6:
-            return Response({'error': 'Você pode enviar no máximo 6 imagens.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
         product = serializer.save()
 
         for image in images:
@@ -368,13 +334,6 @@ class OrderItemViewSet(viewsets.ModelViewSet):
     serializer_class = OrderItemSerializer
     permission_classes = [IsAuthenticated] 
 
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticated
-from .models import Favorite, Product
-from .serializers import FavoriteSerializer
-
 class FavoriteViewSet(viewsets.ModelViewSet):
     queryset = Favorite.objects.all()
     serializer_class = FavoriteSerializer
@@ -454,15 +413,27 @@ class ChatViewSet(viewsets.ModelViewSet):
         except Seller.DoesNotExist:
             seller = None
         
-        # Return chats for both buyer and seller
         return Chat.objects.filter(buyer=user) | Chat.objects.filter(seller=seller)
 
     def create(self, request, *args, **kwargs):
+        buyer_id = request.data.get('buyer')
+        seller_id = request.data.get('seller')
+        existing_chat = Chat.objects.filter(buyer_id=buyer_id, seller_id=seller_id).first()
+
+        if existing_chat:
+            return Response({
+                'error': 'Um chat já existe entre esse comprador e vendedor.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         chat = serializer.save()
-        return Response({'message': 'Chat iniciado com sucesso!', 'chat_id': chat.id}, status=status.HTTP_201_CREATED)
 
+        return Response({
+            'message': 'Chat criado com sucesso!',
+            'chat': ChatSerializer(chat).data
+        }, status=status.HTTP_201_CREATED)
+    
 class MessageViewSet(viewsets.ModelViewSet):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer

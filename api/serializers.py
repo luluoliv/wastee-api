@@ -130,14 +130,23 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     seller_id = serializers.IntegerField(source='seller.id', read_only=True)
     seller_name = serializers.CharField(source='seller.user.name', read_only=True)
     category_name = serializers.CharField(source='category.name', read_only=True)
+    chat_id = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = (
             'id', 'title', 'original_price', 'discounted_price', 'description', 'favorited', 'rate', 
-            'seller_id', 'seller_name', 'category_name', 'state', 'city', 'neighborhood', 'images'
+            'seller_id', 'seller_name', 'category_name', 'state', 'city', 'neighborhood', 'images' 'chat_id'
         )
 
+    def get_chat_id(self, obj):
+        request = self.context.get('request')
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            chat = Chat.objects.filter(buyer=request.user, seller=obj.seller).first()
+            if chat:
+                return chat.id
+        return None
+    
     def get_image(self, obj):
         first_image = obj.images.first()
         if first_image:
