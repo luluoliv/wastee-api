@@ -214,14 +214,25 @@ class SellerSerializer(serializers.ModelSerializer):
         return seller
 
 class CommentSerializer(serializers.ModelSerializer):
+    user_name = serializers.SerializerMethodField()
+    formatted_time = serializers.SerializerMethodField()
+
     class Meta:
         model = Comment
         fields = '__all__'
+        read_only_fields = ('date', 'time')
+
+    def get_user_name(self, obj):
+        return obj.user.name if obj.user else None
+    
+    def get_formatted_time(self, obj):
+        return obj.time.strftime("%H:%M") 
 
     def create(self, validated_data):
         comment = super().create(validated_data)
         comment.product.update_rating()
         return comment
+
 
 class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:

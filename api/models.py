@@ -110,12 +110,12 @@ class ProductImage(models.Model):
     image = models.ImageField(upload_to='product_images/')
     
 class Comment(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, related_name='comments', on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     comment = models.TextField()
     rating = models.IntegerField()
-    date = models.DateField()
-    time = models.TimeField()
+    date = models.DateField(auto_now_add=True) 
+    time = models.TimeField(auto_now_add=True)
 
 
 class Order(models.Model):
