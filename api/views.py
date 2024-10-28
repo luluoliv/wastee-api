@@ -242,6 +242,10 @@ class ProductViewSet(viewsets.ModelViewSet):
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated] 
 
+    def list(self, request, *args, **kwargs):
+        print(request.headers)
+        return super().list(request, *args, **kwargs)
+
     def create(self, request, *args, **kwargs):
         images = request.FILES.getlist('images')
         
@@ -305,7 +309,16 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         product_id = self.request.query_params.get('product_id')
-        queryset = self.queryset.filter(product_id=product_id)
+        seller_id = self.request.query_params.get('seller_id')
+
+        queryset = self.queryset
+
+        if product_id:
+            queryset = queryset.filter(product_id=product_id)
+
+        if seller_id:
+            queryset = queryset.filter(product__seller_id=seller_id)
+
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -421,10 +434,19 @@ class ChatViewSet(viewsets.ModelViewSet):
         seller_id = request.data.get('seller')
         existing_chat = Chat.objects.filter(buyer_id=buyer_id, seller_id=seller_id).first()
 
+        try:
+            seller = Seller.objects.get(pk=seller_id)
+        except Seller.DoesNotExist:
+            return Response({
+                'error': 'Vendedor não encontrado.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
         if existing_chat:
             return Response({
                 'error': 'Um chat já existe entre esse comprador e vendedor.'
             }, status=status.HTTP_400_BAD_REQUEST)
+        
+        request.data['seller'] = seller.id
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)

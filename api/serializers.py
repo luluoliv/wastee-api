@@ -166,6 +166,7 @@ class SellerSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True) 
     products = ProductSerializer(many=True, read_only=True)
     comments = serializers.SerializerMethodField()
+    chat_id = serializers.SerializerMethodField()
 
     class Meta:
         model = Seller
@@ -188,6 +189,16 @@ class SellerSerializer(serializers.ModelSerializer):
         products = obj.products.all()
         comments = Comment.objects.filter(product__in=products)
         return CommentSerializer(comments, many=True).data
+    
+    def get_chat_id(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return None
+        try:
+            chat = Chat.objects.get(seller=obj, buyer=request.user)
+            return chat.id
+        except Chat.DoesNotExist:
+            return None
 
     def create(self, validated_data):
         user = validated_data.pop('user') 

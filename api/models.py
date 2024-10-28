@@ -72,9 +72,9 @@ class Seller(models.Model):
 
         if self.birth_date > timezone.now().date():
             raise ValidationError("Data de nascimento não pode ser no futuro.")
-
+        
     def __str__(self):
-        return f'{self.user.name} - CPF: {self.cpf}'
+        return self.user.id 
 
 
 class Category(models.Model):
@@ -142,12 +142,7 @@ class Chat(models.Model):
     buyer = models.ForeignKey(User, related_name='chats_as_buyer', on_delete=models.CASCADE)
     seller = models.ForeignKey(Seller, related_name='chats_as_seller', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, null=True, blank=True, on_delete=models.CASCADE)
-    participants = models.ManyToManyField(User, related_name='chats', blank=True)  # Adicionado
     started_at = models.DateTimeField(auto_now_add=True)
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        self.participants.add(self.buyer, self.seller) 
 
 class Message(models.Model):
     chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name='messages')
