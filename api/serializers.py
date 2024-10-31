@@ -61,11 +61,11 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = '__all__'
-
+        
 class ProductImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductImage
-        fields = ['image']
+        fields = ['id', 'image', 'external_image_url']
 
 
 class ProductListSerializer(serializers.ModelSerializer):
@@ -80,9 +80,7 @@ class ProductListSerializer(serializers.ModelSerializer):
 
     def get_image(self, obj):
         first_image = obj.images.first()
-        if first_image:
-            return ProductImageSerializer(first_image).data
-        return None
+        return ProductImageSerializer(first_image).data if first_image else None
 
 
 class ProductDetailSerializer(serializers.ModelSerializer):
@@ -131,7 +129,8 @@ class ProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['id', 'title', 'original_price', 'discounted_price', 'description', 'category_id', 'images', 'seller_id', 'seller_name', 'favorited']
+        fields = ['id', 'title', 'original_price', 'discounted_price', 'description', 
+                  'category_id', 'images', 'seller_id', 'seller_name', 'favorited']
 
     def validate_images(self, value):
         if len(value) > 6:
@@ -143,8 +142,13 @@ class ProductSerializer(serializers.ModelSerializer):
         category_id = validated_data.pop('category_id')
         seller_id = validated_data.pop('seller_id')
 
-        category = Category.objects.get(id=category_id)
-        seller = Seller.objects.get(id=seller_id)
+        try:
+            category = Category.objects.get(id=category_id)
+            seller = Seller.objects.get(id=seller_id)
+        except Category.DoesNotExist:
+            raise serializers.ValidationError("Categoria não encontrada.")
+        except Seller.DoesNotExist:
+            raise serializers.ValidationError("Vendedor não encontrado.")
 
         product = Product.objects.create(category=category, seller=seller, **validated_data)
 

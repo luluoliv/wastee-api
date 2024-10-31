@@ -145,7 +145,7 @@ class ConfirmationCodeView(APIView):
 
             return Response({'message': 'Código de confirmação validado com sucesso!', 'user_id': user.id}, status=status.HTTP_200_OK)
         except ConfirmationCode.DoesNotExist:
-            logger.error(f"Código de confirmação não encontrado para o e-mail: {email}")
+            logger.error(f"Cfódigo de confirmação não encontrado para o e-mail: {email}")
             return Response({'error': 'Código de confirmação não encontrado'}, status=status.HTTP_404_NOT_FOUND)
 
 class SetPasswordView(generics.UpdateAPIView):
