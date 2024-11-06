@@ -1,4 +1,8 @@
 import logging
+
+from PIL import Image
+from django.core.files.images import get_image_dimensions
+
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
@@ -87,7 +91,7 @@ class UserRegistrationView(generics.CreateAPIView):
             enviar_email_oauth(user.email, codigo)
         except Exception as e:
             logger.error(f"Erro ao enviar email: {str(e)}")
-            user.delete()  # Deletar o usuário se o email falhar
+            user.delete()  
             return Response({"error": "Erro ao enviar e-mail. Tente novamente mais tarde."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response({"message": "Usuário registrado com sucesso. Verifique seu email para confirmação."}, status=status.HTTP_201_CREATED)
@@ -248,9 +252,27 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         images = request.FILES.getlist('images')
+
+        logger.info(f"Imagens recebidas: {images}")
         
         if len(images) > 6:
             return Response({'error': 'Você pode enviar no máximo 6 imagens.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        for image in images:
+            try:
+                img = Image.open(image)
+                img.verify() 
+                img_format = img.format.lower()
+                
+                if img_format not in ['jpeg', 'jpg', 'png']:
+                    return Response({'error': f"Formato de imagem inválido: {img_format}. Apenas JPEG e PNG são permitidos."}, status=status.HTTP_400_BAD_REQUEST)
+                
+                width, height = get_image_dimensions(image)
+                if width > 3000 or height > 3000:
+                    return Response({'error': 'As imagens devem ter no máximo 3000x3000 pixels.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            except Exception as e:
+                return Response({'error': f"Imagem inválida: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)

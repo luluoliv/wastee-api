@@ -104,6 +104,13 @@ class Product(models.Model):
             self.rate = 0 
         self.save() 
 
+    def save(self, *args, **kwargs):
+        if self.seller:
+            self.state = self.seller.state
+            self.city = self.seller.city
+            self.neighborhood = self.seller.neighborhood
+        super().save(*args, **kwargs)
+
 
 class ProductImage(models.Model):
     product = models.ForeignKey(Product, related_name='images', on_delete=models.CASCADE)
