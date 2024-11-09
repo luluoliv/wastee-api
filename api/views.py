@@ -99,7 +99,7 @@ class UserRegistrationView(generics.CreateAPIView):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def destroy(self, request, *args, **kwargs):
         user = self.get_object()
@@ -247,7 +247,6 @@ class ProductViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated] 
 
     def list(self, request, *args, **kwargs):
-        print(request.headers)
         return super().list(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):

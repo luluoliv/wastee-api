@@ -2,6 +2,8 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
+from google_auth_oauthlib.flow import InstalledAppFlow
+scopes = ['https://www.googleapis.com/auth/gmail.send']
 
 
 def main():
