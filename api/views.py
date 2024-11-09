@@ -432,7 +432,6 @@ class FavoriteViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'Produto não encontrado nos favoritos.'}, status=status.HTTP_404_NOT_FOUND)
         except Product.DoesNotExist:
             return Response({'detail': 'Produto não encontrado.'}, status=status.HTTP_404_NOT_FOUND)
-
 class ChatViewSet(viewsets.ModelViewSet):
     queryset = Chat.objects.all()
     serializer_class = ChatSerializer
@@ -447,26 +446,26 @@ class ChatViewSet(viewsets.ModelViewSet):
             seller = Seller.objects.get(user=user)
         except Seller.DoesNotExist:
             seller = None
-        
+
         return Chat.objects.filter(buyer=user) | Chat.objects.filter(seller=seller)
 
     def create(self, request, *args, **kwargs):
         buyer_id = request.data.get('buyer')
         seller_id = request.data.get('seller')
-        existing_chat = Chat.objects.filter(buyer_id=buyer_id, seller_id=seller_id).first()
+        product_id = request.data.get('product')
+
+        existing_chat = Chat.objects.filter(buyer_id=buyer_id, seller_id=seller_id, product_id=product_id).first()
+
+        if existing_chat:
+            return Response({
+                'error': 'Um chat já existe entre esse comprador e vendedor para este produto.'
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             seller = Seller.objects.get(pk=seller_id)
         except Seller.DoesNotExist:
-            return Response({
-                'error': 'Vendedor não encontrado.'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Vendedor não encontrado.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if existing_chat:
-            return Response({
-                'error': 'Um chat já existe entre esse comprador e vendedor.'
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
         request.data['seller'] = seller.id
 
         serializer = self.get_serializer(data=request.data)
@@ -487,11 +486,15 @@ class MessageViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if not user.is_authenticated:
             return Message.objects.none()
-        return Message.objects.filter(chat__buyer=user) | Message.objects.filter(chat__seller=user)
+        
+        return Message.objects.filter(chat__buyer=user) | Message.objects.filter(chat__seller__user=user)
 
     def create(self, request, *args, **kwargs):
         """Envia uma nova mensagem em um chat."""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         message = serializer.save()
-        return Response({'message': 'Mensagem enviada com sucesso!', 'message': serializer.data}, status=status.HTTP_201_CREATED)
+        return Response({
+            'message': 'Mensagem enviada com sucesso!',
+            'message_data': serializer.data
+        }, status=status.HTTP_201_CREATED)

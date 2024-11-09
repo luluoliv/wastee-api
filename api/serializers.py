@@ -270,12 +270,9 @@ class MessageSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         chat = data.get('chat')
-        if chat is None:
-            raise serializers.ValidationError('Chat deve ser enviado.')
-
         user = self.context['request'].user
 
-        if user.id != chat.buyer.id and user.id != chat.seller.user.id:
+        if user != chat.buyer and user != chat.seller.user:
             raise serializers.ValidationError('Você não tem permissão para enviar mensagens neste chat.')
 
         return data
@@ -288,7 +285,7 @@ class ChatSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Chat
-        fields = ['id','buyer', 'seller', 'seller_name', 'messages', 'started_at', 'last_message']
+        fields = ['id', 'buyer', 'seller', 'seller_name', 'messages', 'started_at', 'last_message']
 
     def get_last_message(self, obj):
         """Retorna a última mensagem do chat, se existir."""
@@ -302,18 +299,12 @@ class ChatSerializer(serializers.ModelSerializer):
                 'sender_id': last_message.sender.id,
             }
         return None
-    
-    def get_participants(self, obj):
-        return [participant.name for participant in obj.participants.all()]
 
     def validate(self, data):
         buyer = data.get('buyer')
         seller = data.get('seller')
 
-        if not buyer or not seller:
-            raise serializers.ValidationError('Um chat deve ter tanto um comprador quanto um vendedor.')
-
-        if buyer == seller.user:  
+        if buyer == seller.user:
             raise serializers.ValidationError('O comprador e o vendedor não podem ser a mesma pessoa.')
 
         return data
